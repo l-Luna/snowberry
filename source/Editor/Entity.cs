@@ -71,6 +71,13 @@ public abstract class Entity : Plugin {
         updateSelection = true;
     }
 
+    public Vector2? GetNode(int i) {
+        if (i >= 0 && i < Nodes.Count) {
+            return Nodes[i];
+        }
+        return null;
+    }
+
     public void SetNode(int i, Vector2 position) {
         if (i >= 0 && i < Nodes.Count) {
             if(Nodes[i] != position)
