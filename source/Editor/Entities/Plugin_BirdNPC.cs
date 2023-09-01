@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Snowberry.Editor.Entities;
 
-[Plugin("birdNpc")]
+[Plugin("bird")]
 public class Plugin_BirdNPC : Entity {
 
     // This list of x-scales lines up with the order of the Modes enum. I am so sorry. I'm usually better I swear. - Gamation
@@ -34,7 +34,8 @@ public class Plugin_BirdNPC : Entity {
                 break;
         }
 
-        sprite.DrawCentered(Position, Color.White, new Vector2(facingScales[(int)Mode], 1));
+        Vector2 justifyMod = (Mode == BirdNPC.Modes.WaitForLightningOff) ? new Vector2(0.5f, 1) : new Vector2(0.5f, 1);
+        sprite.DrawJustified(Position, justifyMod, Color.White, new Vector2(facingScales[(int)Mode], 1));
 
         if (Nodes.Count > 0)
             foreach (var node in Nodes)
@@ -56,14 +57,14 @@ public class Plugin_BirdNPC : Entity {
     protected override IEnumerable<Rectangle> Select() {
 
         Vector2 selBoxSize = (Mode == BirdNPC.Modes.WaitForLightningOff) ? new(18, 12) : new(16, 16);
-        Vector2 posModifier = (Mode == BirdNPC.Modes.WaitForLightningOff) ? new(1, 3) : new(0, 4);
-        yield return RectOnRelative(selBoxSize, position: posModifier, justify: new(0.5f, 0.5f));
+        Vector2 posModifier = (Mode == BirdNPC.Modes.WaitForLightningOff) ? new(0, 0): new(0, 0);
+        yield return RectOnRelative(selBoxSize, position: posModifier, justify: new(0.5f, 1));
 
         foreach (var node in Nodes)
             yield return RectOnAbsolute(selBoxSize, position: node + posModifier, justify: new(0.5f, 0.5f));
     }
 
     public static void AddPlacements() {
-        Placements.Create("Bird NPC", "birdNpc");
+        Placements.Create("Bird NPC", "bird");
     }
 }

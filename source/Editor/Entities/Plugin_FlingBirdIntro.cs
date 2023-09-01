@@ -18,7 +18,7 @@ public class Plugin_FlingBirdIntro : Entity {
         sprite.DrawCentered(Position);
 
         foreach (var node in Nodes)
-            sprite.DrawCentered(node, Color.White * 0.5f);
+            sprite.DrawCentered(node + new Vector2(1, -4), Color.White * 0.5f);
     }
 
     public override void HQRender() {
