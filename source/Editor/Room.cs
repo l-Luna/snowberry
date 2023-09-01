@@ -134,8 +134,11 @@ public class Room {
         }
 
         // Player Spawnpoints (excluded from LevelData.Entities)
-        foreach (Vector2 spawn in data.Spawns)
-            AddEntity(Entity.Create("player", this).SetPosition(spawn));
+        foreach (Vector2 spawn in data.Spawns) {
+            var entity = Entity.Create("player", this);
+            entity.SetPosition(spawn);
+            AddEntity(entity);
+        }
 
         // Triggers
         foreach (EntityData trigger in data.Triggers) {
@@ -561,4 +564,20 @@ public class Room {
     public bool IsEntityTypeDirty(Type t) {
         return DirtyTrackedEntities.ContainsKey(t) && DirtyTrackedEntities[t];
     }
+
+    public UndoRedo.Snapshotter<List<Entity>> SEntityList() => new(
+        () => AllEntities.ToList(),
+        es => {
+            // very carefully
+            // TODO: could be more efficient about dirtying tracked entities; not sure how to do in 1 pass
+            foreach(var e in AllEntities.Where(e => e.Tracked))
+                DirtyTrackedEntities[e.GetType()] = true;
+            AllEntities.Clear();
+            Entities.Clear();
+            Triggers.Clear();
+            TrackedEntities.Clear();
+            foreach(var entity in es)
+                AddEntity(entity);
+        }
+    );
 }

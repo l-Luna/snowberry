@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Monocle;
 
 namespace Snowberry;
@@ -20,6 +22,10 @@ public static class Util {
         public static readonly Color CloudGray = Calc.HexToColor("293036");
         public static readonly Color CloudLightGray = Calc.HexToColor("5c646b");
     }
+
+    public static readonly List<Keys> DigitKeys = new() {
+        Keys.D1, Keys.D2, Keys.D3, Keys.D4, Keys.D5, Keys.D6, Keys.D7, Keys.D8, Keys.D9, Keys.D0
+    };
 
     public static int Bit(this bool b) {
         return b ? 1 : 0;
@@ -82,4 +88,7 @@ public static class Util {
 
     public static Vector2 RoundTo(this Vector2 v, float interval) =>
         (v / interval).Round() * interval;
+
+    public static IEnumerable<T> ConcatN<T>(IEnumerable<T> start, params T[] next) =>
+        start.Concat(next); // the actual work is done by the compiler's interpretation of `params`
 }

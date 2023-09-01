@@ -1,8 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Monocle;
 using System.Collections.Generic;
+using Microsoft.Xna.Framework.Input;
 
-namespace Snowberry.Editor.UI; 
+namespace Snowberry.Editor.UI;
 
 public class UIToolbar : UIElement {
     public Color BG = Calc.HexToColor("202929");
@@ -18,8 +19,7 @@ public class UIToolbar : UIElement {
 
     public int CurrentTool;
 
-    protected List<UIButton> toolButtons = new List<UIButton>();
-    protected Editor editor;
+    protected List<UIButton> toolButtons = new();
 
     public UIToolbar(Editor editor) {
         CurrentTool = 0;
@@ -38,8 +38,8 @@ public class UIToolbar : UIElement {
                 Height = toolButton.Height;
         }
 
-        Height = Height + 8;
-        Width = Width + 6;
+        Height += 8;
+        Width += 6;
     }
 
     public override void Update(Vector2 position = default) {
@@ -58,6 +58,16 @@ public class UIToolbar : UIElement {
                 button.HoveredBG = BtnHoveredBG;
             }
         }
+
+        // Ctrl-any digit to select that tool
+        if (Editor.Instance.CanTypeShortcut())
+            if (MInput.Keyboard.Check(Keys.LeftControl) || MInput.Keyboard.Check(Keys.RightControl))
+                for (var idx = 0; idx < Util.DigitKeys.Count; idx++)
+                    if (MInput.Keyboard.Pressed(Util.DigitKeys[idx])) {
+                        if (Tool.Tools.Count > idx)
+                            Editor.Instance.SwitchTool(idx);
+                        break;
+                    }
     }
 
     public override void Render(Vector2 position = default) {

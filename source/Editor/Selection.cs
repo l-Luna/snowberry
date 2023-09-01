@@ -9,6 +9,8 @@ public abstract class Selection {
     // e.g. entity type or decal path, should be unique
     public abstract string Name();
 
+    public abstract Color Accent();
+
     public abstract bool Contains(Point p);
 
     public abstract void Move(Vector2 amount);
@@ -16,6 +18,8 @@ public abstract class Selection {
     public abstract void RemoveSelf();
 
     public abstract IEnumerable<Rectangle> Rectangles();
+
+    public abstract UndoRedo.Snapshotter SPositions();
 }
 
 public class EntitySelection : Selection {
@@ -30,7 +34,7 @@ public class EntitySelection : Selection {
         }
 
         // -1 = entity itself
-        public Rectangle Rect => entity.SelectionRectangles[Index + 1];
+        public Rectangle Rect => entity.SelectionRectangles.Length > Index + 1 ? entity.SelectionRectangles[Index + 1] : Rectangle.Empty;
     }
 
     public readonly Entity Entity;
@@ -42,6 +46,8 @@ public class EntitySelection : Selection {
     }
 
     public override string Name() => Entity.Name;
+
+    public override Color Accent() => Entity.Info.Module.Color;
 
     public override bool Contains(Point p) =>
         Selections.Any(s => s.Rect.Contains(p));
@@ -69,6 +75,8 @@ public class EntitySelection : Selection {
 
     public override IEnumerable<Rectangle> Rectangles() => Selections.Select(r => r.Rect);
 
+    public override UndoRedo.Snapshotter SPositions() => Entity.SPosition().And(Entity.SNodes());
+
     public override bool Equals(object obj) =>
         obj is EntitySelection s && s.Entity.Equals(Entity) && s.Selections.All(it => Selections.Any(x => x.Index == it.Index));
 
@@ -88,6 +96,8 @@ public class DecalSelection : Selection {
 
     public override string Name() => Decal.Texture;
 
+    public override Color Accent() => Color.White;
+
     public override bool Contains(Point p) => Decal.Bounds.Contains(p);
 
     public override void Move(Vector2 amount) => Decal.Position += amount;
@@ -100,4 +110,6 @@ public class DecalSelection : Selection {
     }
 
     public override IEnumerable<Rectangle> Rectangles() => new[] { Decal.Bounds };
+
+    public override UndoRedo.Snapshotter SPositions() => Decal.SPosition();
 }

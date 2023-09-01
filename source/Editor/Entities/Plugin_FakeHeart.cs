@@ -15,28 +15,17 @@ public class Plugin_FakeHeart : Entity {
         GFX.Game["collectables/heartGem/2/00"]
     };
 
-    [Option("color")] public heartColors Color = heartColors.Random;
+    [Option("color")] public HeartColors Color = HeartColors.Random;
 
     public override void Render() {
         base.Render();
 
-        MTexture heartSprite;
-        switch (Color) {
-            case heartColors.Normal:
-                heartSprite = sprites[0];
-                break;
-            case heartColors.BSide:
-                heartSprite = sprites[1];
-                break;
-            case heartColors.CSide:
-                heartSprite = sprites[2];
-                break;
-            default:
-                heartSprite = sprites[Calc.Random.Next(0, 3)];
-                break;
-        }
-
-        heartSprite.DrawCentered(Position);
+        (Color switch {
+            HeartColors.Normal => sprites[0],
+            HeartColors.BSide => sprites[1],
+            HeartColors.CSide => sprites[2],
+            _ => sprites[Calc.Random.Next(0, 3)]
+        }).DrawCentered(Position);
     }
 
     protected override IEnumerable<Rectangle> Select() {
@@ -47,10 +36,10 @@ public class Plugin_FakeHeart : Entity {
         Placements.Create("Fake Heart", "fakeHeart");
     }
 
-    public enum heartColors {
-        Normal = 0,
-        BSide = 1,
-        CSide = 2,
-        Random = -1
+    public enum HeartColors {
+        Normal,
+        BSide,
+        CSide,
+        Random
     }
 }

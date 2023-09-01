@@ -14,7 +14,7 @@ namespace Snowberry.Editor.Tools;
 public class SelectionTool : Tool {
     private static bool canSelect;
     private static bool selectEntities = true, selectTriggers = true, selectFgDecals = false, selectBgDecals = false;
-    private static UIEntitySelection selectionPanel;
+    private static UISelectionPane selectionPanel;
 
     // entity resizing
     private static bool resizingX, resizingY, fromLeft, fromTop;
@@ -35,7 +35,7 @@ public class SelectionTool : Tool {
             Height = height
         };
 
-        panel.Add(selectionPanel = new UIEntitySelection {
+        panel.Add(selectionPanel = new UISelectionPane {
             Width = 210,
             Height = height - 30,
             Background = null
@@ -70,6 +70,7 @@ public class SelectionTool : Tool {
 
                 pasting = false;
                 toPaste.Clear();
+                UndoRedo.CompleteAction();
             }
         }
 
@@ -161,21 +162,26 @@ public class SelectionTool : Tool {
 
                 Editor.SelectedObjects.Clear();
             } else if (MInput.Keyboard.Pressed(Keys.N)) { // N to create node
+                bool did = false;
                 // iterate backwards to allow modifying the list as we go
                 for (var idx = Editor.SelectedObjects.Count - 1; idx >= 0; idx--) {
-                    var item = Editor.SelectedObjects[idx];
-                    if(item is EntitySelection es) {
-                        var e = es.Entity;
-                        if (e.Nodes.Count < e.MaxNodes || e.MaxNodes == -1) {
-                            int oldIdx = es.Selections[0].Index;
-                            int newNodeIdx = oldIdx + 1;
-                            Vector2 oldPos = oldIdx == -1 ? e.Position : e.Nodes[oldIdx];
-                            e.AddNode(oldPos + new Vector2(24, 0), newNodeIdx);
-                            Editor.SelectedObjects.Remove(item);
-                            Editor.SelectedObjects.Add(new EntitySelection(e, new() { new(e, newNodeIdx) }));
+                    if(Editor.SelectedObjects[idx] is EntitySelection { Entity: var e } es && (e.Nodes.Count < e.MaxNodes || e.MaxNodes == -1)) {
+                        if(!did) {
+                            UndoRedo.BeginAction(Dialog.Clean("SNOWBERRY_ACTION_ADD_NODE"), Editor.SelectedObjects
+                                .OfType<EntitySelection>()
+                                .Select(x => x.Entity.SNodes()));
+                            did = true;
                         }
+                        int oldIdx = es.Selections[0].Index;
+                        int newNodeIdx = oldIdx + 1;
+                        Vector2 oldPos = oldIdx == -1 ? e.Position : e.Nodes[oldIdx];
+                        e.AddNode(oldPos + new Vector2(24, 0), newNodeIdx);
+                        Editor.SelectedObjects.Remove(es);
+                        Editor.SelectedObjects.Add(new EntitySelection(e, new() { new(e, newNodeIdx) }));
                     }
                 }
+                if (did)
+                    UndoRedo.CompleteAction();
             } else if (MInput.Keyboard.Pressed(Keys.Escape)) { // Esc to deselect all & cancel paste
                 if (Editor.SelectedObjects.Count > 0)
                     refreshPanel = true;
@@ -183,17 +189,13 @@ public class SelectionTool : Tool {
                 pasting = false;
                 toPaste = null;
             } else if (MInput.Keyboard.Pressed(Keys.Up)) { // Up/Down/Left/Right to nudge entities
-                foreach (Selection es in Editor.SelectedObjects)
-                    es.Move(new(0, ctrl ? -1 : -8));
+                Nudge(new(0, ctrl ? -1 : -8));
             } else if (MInput.Keyboard.Pressed(Keys.Down)) {
-                foreach (Selection es in Editor.SelectedObjects)
-                    es.Move(new(0, ctrl ? 1 : 8));
+                Nudge(new(0, ctrl ? 1 : 8));
             } else if (MInput.Keyboard.Pressed(Keys.Left)) {
-                foreach (Selection es in Editor.SelectedObjects)
-                    es.Move(new(ctrl ? -1 : -8, 0));
+                Nudge(new(ctrl ? -1 : -8, 0));
             } else if (MInput.Keyboard.Pressed(Keys.Right)) {
-                foreach (Selection es in Editor.SelectedObjects)
-                    es.Move(new(ctrl ? 1 : 8, 0));
+                Nudge(new(ctrl ? 1 : 8, 0));
             } else if (Editor.SelectedRoom != null && ctrl) {
                 if (MInput.Keyboard.Pressed(Keys.A)) { // Ctrl-A to select all
                     // select all
@@ -214,6 +216,7 @@ public class SelectionTool : Tool {
                     try {
                         List<(EntityData data, bool trigger)> entities = CopyPaste.PasteEntities(CopyPaste.Clipboard);
                         if (entities.Count != 0) {
+                            UndoRedo.BeginAction("pasting entities", Editor.SelectedRoom.SEntityList().And(UndoRedo.OfAction(() => pasting = false)));
                             pasting = true;
                             toPaste = new(entities.Count);
                             foreach (var entity in entities)
@@ -315,4 +318,13 @@ public class SelectionTool : Tool {
 
     private static Rectangle CoveringRect(IReadOnlyList<Rectangle> rects) =>
         rects.Aggregate(rects[0], Rectangle.Union);
+
+    private static void Nudge(Vector2 by) {
+        if(Editor.SelectedObjects.Count == 0)
+            return;
+        UndoRedo.BeginAction("nudge objects", Editor.SelectedObjects.Select(x => x.SPositions()));
+        foreach (Selection es in Editor.SelectedObjects)
+            es.Move(by);
+        UndoRedo.CompleteAction();
+    }
 }
