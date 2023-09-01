@@ -88,4 +88,7 @@ public static class Util {
 
     public static Vector2 RoundTo(this Vector2 v, float interval) =>
         (v / interval).Round() * interval;
+
+    public static IEnumerable<T> ConcatN<T>(IEnumerable<T> start, params T[] next) =>
+        start.Concat(next); // the actual work is done by the compiler's interpretation of `params`
 }

@@ -4,7 +4,7 @@ using Monocle;
 using System;
 using System.IO;
 
-namespace Snowberry.Editor; 
+namespace Snowberry.Editor;
 
 public class Decal {
     private MTexture texture;
@@ -14,15 +14,15 @@ public class Decal {
 
     public string Texture { get; private set; }
 
-    public Rectangle Bounds => new Rectangle((int)(Position.X - Math.Abs(texture.Width * Scale.X) / 2 + Room.X * 8), (int)(Position.Y - Math.Abs(texture.Height * Scale.Y) / 2 + Room.Y * 8), (int)Math.Abs(texture.Width * Scale.X), (int)Math.Abs(texture.Height * Scale.Y));
+    public Rectangle Bounds => new((int)(Position.X - Math.Abs(texture.Width * Scale.X) / 2 + Room.X * 8), (int)(Position.Y - Math.Abs(texture.Height * Scale.Y) / 2 + Room.Y * 8), (int)Math.Abs(texture.Width * Scale.X), (int)Math.Abs(texture.Height * Scale.Y));
 
-    internal Decal(Room room, string texture) {
+    public Decal(Room room, string texture) {
         Room = room;
         this.texture = GFX.Game[texture];
         //this.Texture = texture;
     }
 
-    internal Decal(Room room, DecalData data) {
+    public Decal(Room room, DecalData data) {
         Room = room;
 
         // messy, see Celeste.Decal.orig_ctor
@@ -32,7 +32,9 @@ public class Decal {
         Scale = data.Scale;
     }
 
-    internal void Render(Vector2 offset) {
+    public void Render(Vector2 offset) {
         texture.DrawCentered(offset + Position, Color.White, Scale);
     }
+
+    public UndoRedo.Snapshotter<Vector2> SPosition() => new(() => Position, p => Position = p);
 }

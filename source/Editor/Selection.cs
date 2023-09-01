@@ -18,6 +18,8 @@ public abstract class Selection {
     public abstract void RemoveSelf();
 
     public abstract IEnumerable<Rectangle> Rectangles();
+
+    public abstract UndoRedo.Snapshotter SPositions();
 }
 
 public class EntitySelection : Selection {
@@ -32,7 +34,7 @@ public class EntitySelection : Selection {
         }
 
         // -1 = entity itself
-        public Rectangle Rect => entity.SelectionRectangles[Index + 1];
+        public Rectangle Rect => entity.SelectionRectangles.Length > Index + 1 ? entity.SelectionRectangles[Index + 1] : Rectangle.Empty;
     }
 
     public readonly Entity Entity;
@@ -73,6 +75,8 @@ public class EntitySelection : Selection {
 
     public override IEnumerable<Rectangle> Rectangles() => Selections.Select(r => r.Rect);
 
+    public override UndoRedo.Snapshotter SPositions() => Entity.SPosition().And(Entity.SNodes());
+
     public override bool Equals(object obj) =>
         obj is EntitySelection s && s.Entity.Equals(Entity) && s.Selections.All(it => Selections.Any(x => x.Index == it.Index));
 
@@ -106,4 +110,6 @@ public class DecalSelection : Selection {
     }
 
     public override IEnumerable<Rectangle> Rectangles() => new[] { Decal.Bounds };
+
+    public override UndoRedo.Snapshotter SPositions() => Decal.SPosition();
 }
