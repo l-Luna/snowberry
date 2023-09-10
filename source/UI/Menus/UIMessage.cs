@@ -1,11 +1,11 @@
-﻿using Monocle;
-using Microsoft.Xna.Framework;
+﻿using System;
 using System.Collections.Generic;
-using Microsoft.Xna.Framework.Input;
 using Celeste;
-using System;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
+using Monocle;
 
-namespace Snowberry.Editor.UI.Menus;
+namespace Snowberry.UI.Menus;
 
 public class UIMessage : UIElement {
     private class Msg {

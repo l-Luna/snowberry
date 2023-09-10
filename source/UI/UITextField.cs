@@ -1,11 +1,12 @@
-﻿using Celeste.Mod;
+﻿using System;
+using System.Linq;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
-using System;
-using System.Linq;
+using Snowberry.Editor;
 
-namespace Snowberry.Editor.UI;
+namespace Snowberry.UI;
 
 public class UITextField : UIElement {
 
@@ -117,8 +118,8 @@ public class UITextField : UIElement {
     public override void Update(Vector2 position = default) {
         base.Update(position);
 
-        int mouseX = (int)Editor.Mouse.Screen.X;
-        int mouseY = (int)Editor.Mouse.Screen.Y;
+        int mouseX = (int)Mouse.Screen.X;
+        int mouseY = (int)Mouse.Screen.Y;
         bool inside = new Rectangle((int)position.X - 1, (int)position.Y - 1, Width + 2, Height + 2).Contains(mouseX, mouseY);
 
         if (MInput.Mouse.CheckLeftButton) {

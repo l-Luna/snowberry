@@ -71,7 +71,10 @@ public class EntitySelection : Selection {
 
     public void SetHeight(int height) => Entity.SetHeight(height);
 
-    public override void RemoveSelf() => Entity.Room.RemoveEntity(Entity);
+    public override void RemoveSelf() {
+        Entity.Room.RemoveEntity(Entity);
+        Entity.Room.MarkEntityDirty(Entity); // tracked entities
+    }
 
     public override IEnumerable<Rectangle> Rectangles() => Selections.Select(r => r.Rect);
 

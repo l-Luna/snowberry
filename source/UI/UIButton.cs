@@ -3,7 +3,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace Snowberry.Editor.UI; 
+namespace Snowberry.UI;
 
 public class UIButton : UIElement {
     private readonly Vector2 space, minSize;
@@ -25,8 +25,10 @@ public class UIButton : UIElement {
     public Color HoveredFG = Calc.HexToColor("f0f0f0");
     public Color HoveredBG = Calc.HexToColor("18181c");
 
+    public String ButtonTooltip;
+
     private float lerp;
-    private bool pressed, hovering;
+    protected bool pressed, hovering;
 
     private readonly MTexture
         top,
@@ -88,7 +90,7 @@ public class UIButton : UIElement {
         SetSize((int)size.X + 6, (int)size.Y + 3);
 
         if (stayCentered)
-            Position = Calc.Round(mid - new Vector2(Width, Height) / 2f);
+            Position = (mid - new Vector2(Width, Height) / 2f).Round();
     }
 
     public void SetIcon(MTexture icon) {
@@ -116,8 +118,8 @@ public class UIButton : UIElement {
     public override void Update(Vector2 position = default) {
         base.Update();
 
-        int mouseX = (int)Editor.Mouse.Screen.X;
-        int mouseY = (int)Editor.Mouse.Screen.Y;
+        int mouseX = (int)Mouse.Screen.X;
+        int mouseY = (int)Mouse.Screen.Y;
         if (active) {
             hovering = new Rectangle((int)position.X + 1, (int)position.Y + 1, Width - 2, Height - 2).Contains(mouseX, mouseY);
 
@@ -131,6 +133,12 @@ public class UIButton : UIElement {
                     Pressed();
                     pressed = false;
                 }
+            }
+
+            if (MInput.Mouse.ReleasedLeftButton || MInput.Mouse.ReleasedRightButton) {
+                // we only actually activate if the mouse was released on this button + it's visible,
+                // but we still need to make it visually unpress if it's dragged off and released
+                pressed = false;
             }
 
             lerp = Calc.Approach(lerp, pressed ? 1f : 0f, Engine.DeltaTime * 20f);
@@ -174,4 +182,6 @@ public class UIButton : UIElement {
                 Draw.Rect(at + new Vector2(-2, textArea.Y / 2 + 1), textArea.X + 4, 1, Color.Lerp(FG, Color.Black, 0.25f));
         } else icon?.Invoke(at, fg);
     }
+
+    public override string Tooltip() => ButtonTooltip;
 }

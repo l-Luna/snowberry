@@ -1,74 +1,106 @@
 SNOWBERRY_SNOWBERRY={# d12626}Snowberry{#}
 
 # *** Celeste Menu ***
-	EDITOR_MAINMENU= Snowberry
+    EDITOR_MAINMENU= Snowberry
 
 # *** Main Menu ***
 
-	SNOWBERRY_MAINMENU_YES=						yes
-	SNOWBERRY_MAINMENU_NO=						no
-	SNOWBERRY_MAINMENU_CLOSE=				    close
+    SNOWBERRY_MAINMENU_YES=                     yes
+    SNOWBERRY_MAINMENU_NO=                      no
+    SNOWBERRY_MAINMENU_CLOSE=                   close
 
-	SNOWBERRY_MAINMENU_CREATE=					+ new map
+    SNOWBERRY_MAINMENU_CREATE=                  + new map
 
-	SNOWBERRY_MAINMENU_LOAD=					↓ open existing map
-	SNOWBERRY_MAINMENU_LOAD_CONFIRM=        	are you sure you want to open this map?
-	SNOWBERRY_MAINMENU_LOAD_UNSAVED=			(all unsaved changes will be lost)
-	SNOWBERRY_MAINMENU_LOAD_TIP=				to skip this message, hold CTRL while clicking on the map
+    SNOWBERRY_MAINMENU_LOAD=                    ↓ open existing map
+    SNOWBERRY_MAINMENU_LOAD_CONFIRM=            are you sure you want to open this map?
+    SNOWBERRY_MAINMENU_LOAD_UNSAVED=            (all unsaved changes will be lost)
+    SNOWBERRY_MAINMENU_LOAD_TIP=                to skip this message, hold CTRL while clicking on the map
 
-	SNOWBERRY_MAINMENU_LOADSEARCH=				search map or @mod...
-	SNOWBERRY_MAINMENU_LOADSEARCHBAR_NONE=		no results!
-	SNOWBERRY_MAINMENU_LOADSEARCHBAR_ONE=		one map found :
-	SNOWBERRY_MAINMENU_LOADSEARCHBAR_MORE=		maps found :
+    SNOWBERRY_MAINMENU_LOADSEARCH=              search map or @mod...
+    SNOWBERRY_MAINMENU_LOADSEARCHBAR_NONE=      no results!
+    SNOWBERRY_MAINMENU_LOADSEARCHBAR_ONE=       one map found :
+    SNOWBERRY_MAINMENU_LOADSEARCHBAR_MORE=      maps found :
 
-	SNOWBERRY_MAINMENU_EXIT=					← exit
+    SNOWBERRY_MAINMENU_EXIT=                    ← exit
 
-	SNOWBERRY_MAINMENU_SETTINGS=				settings
-	SNOWBERRY_MAINMENU_CREDITS=					by catapillie, leppa, Viv
+    SNOWBERRY_MAINMENU_SETTINGS=                settings
+    SNOWBERRY_MAINMENU_CREDITS=                 by catapillie, leppa, Viv
 
 # *** Editor ***
 
     SNOWBERRY_EDITOR_RETURN=                    return to map
     SNOWBERRY_EDITOR_PLAYTEST=                  playtest
     SNOWBERRY_EDITOR_EXPORT=                    save
-	
-	SNOWBERRY_EDITOR_EXPORT_NEW=				this map doesn't have a name yet! pick a filename
-	SNOWBERRY_EDITOR_EXPORT_UNSAVEABLE=			this map came from a zip file or vanilla, and can't be saved over. pick a filename to save it your Mods folder
+    
+    SNOWBERRY_EDITOR_EXPORT_NEW=                this map doesn't have a name yet! pick a filename
+    SNOWBERRY_EDITOR_EXPORT_UNSAVEABLE=         this map came from a zip file or vanilla, and can't be saved over. pick a filename to save it your Mods folder
 
-    SNOWBERRY_EDITOR_TOOL_SELECT=  	            select
+    SNOWBERRY_EDITOR_TOOL_SELECT=               select
 
     SNOWBERRY_EDITOR_TOOL_TILEBRUSH=            tile brush
 
-    SNOWBERRY_EDITOR_TOOL_ROOMTOOL=             room tool
-    SNOWBERRY_EDITOR_TOOL_ROOMTOOL_NONE=        no room selected           
+    SNOWBERRY_EDITOR_TOOL_ROOMS=                rooms
 
     SNOWBERRY_EDITOR_TOOL_ENTITIES=             entities
 
     SNOWBERRY_EDITOR_TOOL_STYLEGROUNDS=         stylegrounds
-	
-	SNOWBERRY_EDITOR_TOOL_MAPINFO=              map info
+    
+    SNOWBERRY_EDITOR_TOOL_MAPINFO=              map info
 
     SNOWBERRY_EDITOR_UTIL_FOREGROUND=           foreground
     SNOWBERRY_EDITOR_UTIL_BACKGROUND=           background
 
-# *** Actions ***
-	SNOWBERRY_ACTION_PASTE=						paste {0}
-	SNOWBERRY_ACTION_DELETE=					delete {0}
-	SNOWBERRY_ACTION_MOVE=						move {0}
-	SNOWBERRY_ACTION_RESIZE=					resize {0}
-	SNOWBERRY_ACTION_CONFIGURE=					configure {0}
-	SNOWBERRY_ACTION_PLACE=						place {0}
-	SNOWBERRY_ACTION_REORDER_STYLEGROUNDS=		reorder stylegrounds
-	SNOWBERRY_ACTION_DRAW_TILES=				paint tiles
-	SNOWBERRY_ACTION_ADD_NODE=					add node
+# *** Selection Tool ***
+	SNOWBERRY_EDITOR_SELECT_ENTITIES_TT=        select entities (shift-E)
+	SNOWBERRY_EDITOR_SELECT_TRIGGERS_TT=        select triggers (shift-T)
+	SNOWBERRY_EDITOR_SELECT_FG_DECALS_TT=       select FG decals (shift-F)
+	SNOWBERRY_EDITOR_SELECT_BG_DECALS_TT=       select BG decals (shift-B)
 	
-	SNOWBERRY_ACTION_TYPE_ENTITIES=				entities
-	SNOWBERRY_ACTION_TYPE_DECALS=				decals
-	SNOWBERRY_ACTION_TYPE_TILES=				tiles
-	SNOWBERRY_ACTION_TYPE_ROOM=					room
-	SNOWBERRY_ACTION_TYPE_STYLEGROUND=			styleground
-	SNOWBERRY_ACTION_TYPE_MAP=					map
-	SNOWBERRY_ACTION_TYPE_PLURAL=				{0}, {1}
+	SNOWBERRY_EDITOR_SELECT_COPY_TT=            copy (ctrl-C)
+	SNOWBERRY_EDITOR_SELECT_PASTE_TT=           paste (ctrl-V)
+	SNOWBERRY_EDITOR_SELECT_CUT_TT=             cut (ctrl-X)
+	SNOWBERRY_EDITOR_SELECT_DELETE_TT=          delete (del)
+
+# *** Tile Brush Tool ***
+	SNOWBERRY_EDITOR_TILE_BRUSH_BRUSH_TT=       brush
+	SNOWBERRY_EDITOR_TILE_BRUSH_RECT_TT=        rectangle
+	SNOWBERRY_EDITOR_TILE_BRUSH_HOLLOWRECT_TT=  hollow rectangle
+	SNOWBERRY_EDITOR_TILE_BRUSH_FILL_TT=        bucket
+	SNOWBERRY_EDITOR_TILE_BRUSH_LINE_TT=        line
+	SNOWBERRY_EDITOR_TILE_BRUSH_CIRCLE_TT=      circle
+	SNOWBERRY_EDITOR_TILE_BRUSH_EYEDROPPER_TT=  eyedropper
+
+# *** Room Tool ***
+
+    SNOWBERRY_EDITOR_ROOM_NONE_TITLE=           no room selected
+    SNOWBERRY_EDITOR_ROOM_CREATE_TITLE=         Create room
+	SNOWBERRY_EDITOR_ROOM_SELECTED_TITLE=       Selected room:
+	SNOWBERRY_EDITOR_ROOM_FILL_SELECTED_TITLE=  Selected filler: (%0)
+	
+    SNOWBERRY_EDITOR_ROOM_CREATE_ROOM=          create room
+    SNOWBERRY_EDITOR_ROOM_CREATE_FILLER=        create filler
+    SNOWBERRY_EDITOR_ROOM_NAME=                 name
+	SNOWBERRY_EDITOR_ROOM_UPDATE_NAME=          update name
+    SNOWBERRY_EDITOR_ROOM_INVALID_NAME=         invalid name
+    SNOWBERRY_EDITOR_ROOM_USED_NAME=            name already used
+	SNOWBERRY_EDITOR_ROOM_DELETE=               delete
+	
+	SNOWBERRY_EDITOR_ROOM_OPTS_MUSIC=           music options :
+	SNOWBERRY_EDITOR_ROOM_OPTS_MUSIC_LAYERS=    music layers :
+	SNOWBERRY_EDITOR_ROOM_OPT_MUSIC=            music
+	SNOWBERRY_EDITOR_ROOM_OPT_ALT_MUSIC=        alt music
+	SNOWBERRY_EDITOR_ROOM_OPT_AMBIENCE=         ambience
+	SNOWBERRY_EDITOR_ROOM_OPT_MUSIC_PROG=       music progress
+	SNOWBERRY_EDITOR_ROOM_OPT_AMBIENCE_PROG=    ambience progress
+
+	SNOWBERRY_EDITOR_ROOM_OPTS_CAMERA_OFFSET=   camera offset :
+	
+	SNOWBERRY_EDITOR_ROOM_OPTS_OTHER=           other :
+	SNOWBERRY_EDITOR_ROOM_OPTS_DARK=            dark
+	SNOWBERRY_EDITOR_ROOM_OPTS_UNDERWATER=      underwater
+	SNOWBERRY_EDITOR_ROOM_OPTS_SPACE=           space
+	SNOWBERRY_EDITOR_ROOM_OPTS_DDS=             disable down transition
+	SNOWBERRY_EDITOR_ROOM_OPTS_WIND=            wind pattern
 
 # *** Stylegrounds ***
     
@@ -87,14 +119,14 @@ SNOWBERRY_SNOWBERRY={# d12626}Snowberry{#}
 
     SNOWBERRY_SETTINGS_MIDDLE_CLICK_PAN=        Middle Click to Pan
     SNOWBERRY_SETTINGS_MIDDLE_CLICK_PAN_SUB=    Whether to use middle click to pan and right click for alternate placements,{n}or right click to pan and alt-left-click for alternate placements.
-	
-	SNOWBERRY_SETTINGS_FANCY_RENDER=			Fancy Rendering
-	SNOWBERRY_SETTINGS_FANCY_RENDER_SUB=		Whether to display entities more accurately in-editor, such as spinners and dream blocks.
-	
-	SNOWBERRY_SETTINGS_SG_PREVIEW=				Stylegrounds Previewing
-	SNOWBERRY_SETTINGS_SG_PREVIEW_SUB=			Whether to preview stylegrounds in-editor.
+    
+    SNOWBERRY_SETTINGS_FANCY_RENDER=            Fancy Rendering
+    SNOWBERRY_SETTINGS_FANCY_RENDER_SUB=        Whether to display entities more accurately in-editor, such as spinners and dream blocks.
+    
+    SNOWBERRY_SETTINGS_SG_PREVIEW=              Stylegrounds Previewing
+    SNOWBERRY_SETTINGS_SG_PREVIEW_SUB=          Whether to preview stylegrounds in-editor.
 
 # *** Pause Menu ***
 
-	SNOWBERRY_RETURN_TO_EDITOR=					Return to Editor
-	SNOWBERRY_QUIT=								Quit
+    SNOWBERRY_RETURN_TO_EDITOR=                 Return to Editor
+    SNOWBERRY_QUIT=                             Quit

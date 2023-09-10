@@ -1,9 +1,9 @@
-﻿using Microsoft.Xna.Framework;
-using System;
+﻿using System;
 using System.Linq;
-using Snowberry.Editor.Tools;
+using Microsoft.Xna.Framework;
+using Snowberry.Editor;
 
-namespace Snowberry.Editor.UI.Menus;
+namespace Snowberry.UI.Menus;
 
 public class UIPluginOptionList : UIElement {
     public class UIOption : UIElement {
@@ -98,29 +98,29 @@ public class UIPluginOptionList : UIElement {
         }
     }
 
-    public static UIOption StringOption(string name, string value, Action<string> onChange) {
-        var checkbox = new UITextField(Fonts.Regular, 80, value) {
+    public static UIOption StringOption(string name, string value, Action<string> onChange, int width = 80) {
+        var checkbox = new UITextField(Fonts.Regular, width, value) {
             OnInputChange = str => onChange?.Invoke(str)
         };
         return new UIOption(name, checkbox);
     }
 
-    public static UIOption StringOption(string name, string value, Plugin plugin) {
-        var checkbox = new UITextField(Fonts.Regular, 80, value) {
+    public static UIOption StringOption(string name, string value, Plugin plugin, int width = 80) {
+        var checkbox = new UITextField(Fonts.Regular, width, value) {
             OnInputChange = str => plugin.Set(name, str)
         };
         return new UIOption(name, checkbox, plugin.GetTooltipFor(name));
     }
 
-    public static UIOption LiteralValueOption<T>(string name, string value, Action<T> onChange) {
-        var checkbox = new UIValueTextField<T>(Fonts.Regular, 80, value) {
+    public static UIOption LiteralValueOption<T>(string name, string value, Action<T> onChange, int width = 80) {
+        var checkbox = new UIValueTextField<T>(Fonts.Regular, width, value) {
             OnValidInputChange = v => onChange?.Invoke(v)
         };
         return new UIOption(name, checkbox);
     }
 
-    public static UIOption LiteralValueOption<T>(string name, string value, Plugin plugin) {
-        var checkbox = new UIValueTextField<T>(Fonts.Regular, 80, value) {
+    public static UIOption LiteralValueOption<T>(string name, string value, Plugin plugin, int width = 80) {
+        var checkbox = new UIValueTextField<T>(Fonts.Regular, width, value) {
             OnValidInputChange = v => plugin.Set(name, v)
         };
         return new UIOption(name, checkbox, plugin.GetTooltipFor(name));
@@ -166,8 +166,8 @@ public class UIPluginOptionList : UIElement {
                     onChange?.Invoke(it);
                     button.SetText(it + " \uF036");
                 });
-                dropdown.Position = button.GetBoundsPos() + Vector2.UnitY * (button.Height + 2) - Editor.Instance.ToolPanel.GetBoundsPos();
-                Editor.Instance.ToolPanel.Add(dropdown);
+                dropdown.Position = button.GetBoundsPos() + Vector2.UnitY * (button.Height + 2) - Editor.Editor.Instance.ToolPanel.GetBoundsPos();
+                Editor.Editor.Instance.ToolPanel.Add(dropdown);
             }
         };
 
@@ -190,10 +190,10 @@ public class UIPluginOptionList : UIElement {
                     }) {
                         Icon = ts.Tile.Tiles[0, 0]
                     }).ToArray()) {
-                    Position = button.GetBoundsPos() + Vector2.UnitY * (button.Height + 2) - Editor.Instance.ToolPanel.GetBoundsPos()
+                    Position = button.GetBoundsPos() + Vector2.UnitY * (button.Height + 2) - Editor.Editor.Instance.ToolPanel.GetBoundsPos()
                 };
 
-                Editor.Instance.ToolPanel.Add(dropdown);
+                Editor.Editor.Instance.ToolPanel.Add(dropdown);
             }
         };
         // TODO: give the button an icon as well

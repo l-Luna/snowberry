@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -89,6 +88,12 @@ public static class Util {
     public static Vector2 RoundTo(this Vector2 v, float interval) =>
         (v / interval).Round() * interval;
 
-    public static IEnumerable<T> ConcatN<T>(IEnumerable<T> start, params T[] next) =>
-        start.Concat(next); // the actual work is done by the compiler's interpretation of `params`
+    public static string Substitute(this string s, params object[] values) {
+        for (int i = 0; i < values.Length; i++)
+            s = s.Replace($"{{{i}}}", values[i].ToString());
+        return s;
+    }
+
+    public static string IntoString(this Color c) =>
+        BitConverter.ToString(new[] { c.R, c.G, c.B }).Replace("-", string.Empty);
 }

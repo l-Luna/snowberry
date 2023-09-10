@@ -2,17 +2,20 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
-using MonoMod.Utils;
-using Snowberry.Editor.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Snowberry.UI;
+using Color = Microsoft.Xna.Framework.Color;
+using Point = Microsoft.Xna.Framework.Point;
+using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
 namespace Snowberry.Editor.Tools;
 
 public class TileBrushTool : Tool {
+
     public enum TileBrushMode {
-        Brush, Rect, HollowRect, Fill, Line, Circle
+        Brush, Rect, HollowRect, Fill, Line, Circle, Eyedropper
     }
 
     public static int CurLeftTileset = 2;
@@ -32,11 +35,13 @@ public class TileBrushTool : Tool {
     public List<Tileset> FgTilesets => Tileset.FgTilesets;
     public List<Tileset> BgTilesets => Tileset.BgTilesets;
 
-    private List<UIButton> fgTilesetButtons = new();
-    private List<UIButton> bgTilesetButtons = new();
-    private List<UIButton> modeButtons = new();
+    private readonly List<UIButton> fgTilesetButtons = new();
+    private readonly List<UIButton> bgTilesetButtons = new();
+    private readonly List<UIButton> modeButtons = new();
 
     private static bool isPainting;
+
+    public static readonly MTexture brushes = GFX.Gui["Snowberry/brushes"];
 
     public override string GetName() {
         return Dialog.Clean("SNOWBERRY_EDITOR_TOOL_TILEBRUSH");
@@ -45,7 +50,6 @@ public class TileBrushTool : Tool {
     public override UIElement CreatePanel(int height) {
         bgTilesetButtons.Clear();
         fgTilesetButtons.Clear();
-        modeButtons.Clear();
         UIElement panel = new UIElement {
             Width = 160,
             Background = Calc.HexToColor("202929") * (185 / 255f),
@@ -121,28 +125,30 @@ public class TileBrushTool : Tool {
             bgTilesetButtons.Add(button);
         }
 
-        UIElement brushTypes = new UIElement() {
-            Width = 30
-        };
-        foreach (var mode in Enum.GetValues(typeof(TileBrushMode))) {
-            var t = mode.ToString();
-            var button = new UIButton(t.Substring(0, 1), Fonts.Regular, 6, 6) {
-                OnPress = () => LeftMode = (TileBrushMode)mode,
-                OnRightPress = () => RightMode = (TileBrushMode)mode
-            };
-            brushTypes.AddBelow(button, Vector2.One * 5);
-            modeButtons.Add(button);
-        }
-
-        panel.Add(brushTypes);
-        tilesetsPanel.Position.X = brushTypes.Width + 5;
+        tilesetsPanel.Position.X = 5;
         tilesetsPanel.Background = null;
         panel.Add(tilesetsPanel);
         return panel;
     }
 
+    public override UIElement CreateActionBar() {
+        UIElement brushTypes = new();
+        modeButtons.Clear();
+        foreach (var mode in Enum.GetValues(typeof(TileBrushMode))) {
+            var button = new UIButton(brushes.GetSubtexture(0, 16 * (int)mode, 16, 16), 3, 3) {
+                OnPress = () => LeftMode = (TileBrushMode)mode,
+                OnRightPress = () => RightMode = (TileBrushMode)mode,
+                ButtonTooltip = Dialog.Clean($"SNOWBERRY_EDITOR_TILE_BRUSH_{mode.ToString().ToUpperInvariant()}_TT")
+            };
+            brushTypes.AddRight(button, modeButtons.Count == 0 ? new(0, 4) : new(6, 4));
+            modeButtons.Add(button);
+        }
+        brushTypes.CalculateBounds();
+        return brushTypes;
+    }
+
     public override void Update(bool canClick) {
-        bool clear = MInput.Keyboard.Check(Keys.X);
+        bool clear = MInput.Keyboard.Check(Keys.Escape);
 
         if (Editor.SelectedRoom == null)
             holoFgTileMap = holoBgTileMap = null;
@@ -154,13 +160,27 @@ public class TileBrushTool : Tool {
         }
 
         bool middlePan = Snowberry.Settings.MiddleClickPan;
-        bool left = (MInput.Mouse.CheckLeftButton || (middlePan && MInput.Mouse.ReleasedLeftButton)) && (middlePan || !MInput.Keyboard.Check(Keys.LeftAlt));
+        bool left = (MInput.Mouse.CheckLeftButton || (middlePan && MInput.Mouse.ReleasedLeftButton)) && (middlePan || !MInput.Keyboard.Check(Keys.LeftAlt, Keys.RightAlt));
         bool fg = left ? LeftFg : RightFg;
         int tileset = left ? CurLeftTileset : CurRightTileset;
         bool retile = false;
+        TileBrushMode mode = left ? LeftMode : RightMode;
 
         if (canClick && (MInput.Mouse.PressedLeftButton || (middlePan && MInput.Mouse.PressedRightButton))) {
-            isPainting = true;
+            if (mode != TileBrushMode.Eyedropper) {
+                isPainting = true;
+            } else if(Editor.SelectedRoom != null) {
+                Vector2 tilePos = new((float)Math.Floor(Mouse.World.X / 8) * 8, (float)Math.Floor(Mouse.World.Y / 8) * 8);
+                bool lookBg = MInput.Keyboard.Check(Keys.LeftShift, Keys.RightShift);
+                char at = Editor.SelectedRoom.GetTile(!lookBg, tilePos);
+                if (left) {
+                    LeftFg = !lookBg;
+                    CurLeftTileset = (lookBg ? BgTilesets : FgTilesets).FindIndex(t => t.Key == at);
+                } else {
+                    RightFg = !lookBg;
+                    CurRightTileset = (lookBg ? BgTilesets : FgTilesets).FindIndex(t => t.Key == at);
+                }
+            }
         } else if (MInput.Mouse.ReleasedLeftButton || (middlePan && MInput.Mouse.ReleasedRightButton)) {
             if (Editor.SelectedRoom != null && canClick && isPainting)
                 for (int x = 0; x < holoFgTileMap.Columns; x++)
@@ -180,7 +200,7 @@ public class TileBrushTool : Tool {
             holoBgTileMap = null;
             holoGrid = null;
         } else if ((MInput.Mouse.CheckLeftButton || (middlePan && MInput.Mouse.CheckRightButton)) && Editor.SelectedRoom != null) {
-            var tilePos = new Vector2((float)Math.Floor(Editor.Mouse.World.X / 8 - Editor.SelectedRoom.Position.X), (float)Math.Floor(Editor.Mouse.World.Y / 8 - Editor.SelectedRoom.Position.Y));
+            var tilePos = new Vector2((float)Math.Floor(Mouse.World.X / 8 - Editor.SelectedRoom.Position.X), (float)Math.Floor(Mouse.World.Y / 8 - Editor.SelectedRoom.Position.Y));
             int x = (int)tilePos.X;
             int y = (int)tilePos.Y;
             if (Editor.SelectedRoom.Bounds.Contains((int)(x + Editor.SelectedRoom.Position.X), (int)(y + Editor.SelectedRoom.Position.Y))) {
@@ -191,7 +211,6 @@ public class TileBrushTool : Tool {
                 int bx = (int)Math.Max(x, roomLastPress.X);
                 int by = (int)Math.Max(y, roomLastPress.Y);
                 var rect = new Rectangle(ax, ay, bx - ax + 1, by - ay + 1);
-                TileBrushMode mode = left ? LeftMode : RightMode;
                 switch (mode) {
                     case TileBrushMode.Brush:
                         SetHoloTile(fg, tileset, x, y);
@@ -287,7 +306,7 @@ public class TileBrushTool : Tool {
                             }
 
                         break;
-                    default:
+                    case TileBrushMode.Eyedropper:
                         break;
                 }
 
@@ -353,8 +372,11 @@ public class TileBrushTool : Tool {
 
     public override void RenderWorldSpace() {
         base.RenderWorldSpace();
-        TileGrid tile = LeftFg ? FgTilesets[CurLeftTileset].Tile : BgTilesets[CurLeftTileset].Tile;
-        var tilePos = new Vector2((float)Math.Floor(Editor.Mouse.World.X / 8) * 8, (float)Math.Floor(Editor.Mouse.World.Y / 8) * 8);
+
+        bool middlePan = Snowberry.Settings.MiddleClickPan;
+        bool isUsingAlt = (middlePan && MInput.Mouse.CheckRightButton) || (!middlePan && MInput.Keyboard.Check(Keys.LeftAlt, Keys.RightAlt));
+        Vector2 tilePos = new((float)Math.Floor(Mouse.World.X / 8) * 8, (float)Math.Floor(Mouse.World.Y / 8) * 8);
+
         if (isPainting && Editor.SelectedRoom != null) {
             var fg = MInput.Mouse.CheckLeftButton ? LeftFg : RightFg;
             var map = fg ? holoFgTileMap : holoBgTileMap;
@@ -365,16 +387,42 @@ public class TileBrushTool : Tool {
                 for (int y = 0; y < map.Rows; y++)
                     if (holoSetTiles[x, y] && map[x, y] == '0')
                         Draw.Rect(p.X + x * 8, p.Y + y * 8, 8, 8, Color.Red * (prog / 3f + 0.35f));
-        } else
-            RenderTileGrid(tilePos, tile, Color.White * 0.5f);
+        } else if ((isUsingAlt ? RightMode : LeftMode) != TileBrushMode.Eyedropper) {
+            var leftTile = LeftFg ? FgTilesets[CurLeftTileset].Tile : BgTilesets[CurLeftTileset].Tile;
+            var rightTile = RightFg ? FgTilesets[CurRightTileset].Tile : BgTilesets[CurRightTileset].Tile;
+            RenderTileGrid(tilePos, isUsingAlt ? rightTile : leftTile, Color.White * 0.5f);
+        }
     }
 
-    public static void RenderTileGrid(Vector2 position, TileGrid tile, Color color) {
+    public override void RenderScreenSpace() {
+        bool middlePan = Snowberry.Settings.MiddleClickPan;
+        bool isUsingAlt = (middlePan && MInput.Mouse.CheckRightButton) || (!middlePan && MInput.Keyboard.Check(Keys.LeftAlt, Keys.RightAlt));
+        Vector2 tilePos = new((float)Math.Floor(Mouse.World.X / 8) * 8, (float)Math.Floor(Mouse.World.Y / 8) * 8);
+
+        if ((isUsingAlt ? RightMode : LeftMode) == TileBrushMode.Eyedropper && Editor.SelectedRoom != null) {
+            bool lookBg = MInput.Keyboard.Check(Keys.LeftShift, Keys.RightShift);
+            char at = Editor.SelectedRoom.GetTile(!lookBg, tilePos);
+            Tileset t = Tileset.ByKey(at, lookBg);
+            RenderTileGrid(Mouse.Screen + new Vector2(16, -16), t.Tile, Color.White, 2);
+        }
+    }
+
+    public static void RenderTileGrid(Vector2 position, TileGrid tile, Color color, float scale = 1) {
         if (tile == null)
             return;
         for (int x = 0; x < tile.Tiles.Columns; x++)
             for (int y = 0; y < tile.Tiles.Rows; y++)
                 if (tile.Tiles[x, y] != null)
-                    tile.Tiles[x, y].Draw(position + new Vector2(x, y) * 8, Vector2.Zero, color);
+                    tile.Tiles[x, y].Draw(position + new Vector2(x, y) * 8 * scale, Vector2.Zero, color, scale);
+    }
+
+    public override void SuggestCursor(ref MTexture cursor, ref Vector2 justify) {
+        justify = new(0, 1);
+
+        bool middlePan = Snowberry.Settings.MiddleClickPan;
+        bool isUsingAlt = (middlePan && MInput.Mouse.CheckRightButton) || (!middlePan && MInput.Keyboard.Check(Keys.LeftAlt, Keys.RightAlt));
+        TileBrushMode displayed = isUsingAlt ? RightMode : LeftMode;
+        int xOffset = LeftMode == RightMode ? 48 : (isUsingAlt ? 32 : 16);
+        cursor = brushes.GetSubtexture(xOffset, (int)displayed * 16, 16, 16);
     }
 }

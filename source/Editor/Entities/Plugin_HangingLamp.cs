@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 
 namespace Snowberry.Editor.Entities;
 
-[Plugin("hangingLamp")]
+[Plugin("hanginglamp")]
 public class Plugin_HangingLamp : Entity {
 
     public override int MinHeight => 16;
@@ -32,6 +31,6 @@ public class Plugin_HangingLamp : Entity {
     }
 
     public static void AddPlacements() {
-        Placements.Create("Hanging Lamp", "hangingLamp");
+        Placements.Create("Hanging Lamp", "hanginglamp");
     }
 }

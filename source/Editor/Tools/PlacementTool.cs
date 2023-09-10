@@ -5,8 +5,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
-using Snowberry.Editor.UI;
-
+using Snowberry.UI;
 using Placement = Snowberry.Editor.Placements.Placement;
 
 namespace Snowberry.Editor.Tools;
@@ -58,7 +57,7 @@ public class PlacementTool : Tool {
             Position = new Vector2(5, height - 20),
             Entries = Placements.All.ToArray(),
             InfoText = Dialog.Clean("SNOWBERRY_MAINMENU_LOADSEARCH"),
-            OnInputChange = s => {
+            OnInputChange = _ => {
                 buttonPane.Scroll = 0;
                 int y = 0;
                 foreach (var b in placementButtons) {
@@ -85,7 +84,7 @@ public class PlacementTool : Tool {
     public override void Update(bool canClick) {
         bool middlePan = Snowberry.Settings.MiddleClickPan;
 
-        Placement selection = (middlePan && (MInput.Mouse.CheckRightButton || (middlePan && MInput.Mouse.ReleasedRightButton)) || !middlePan && MInput.Keyboard.Check(Keys.LeftAlt)) ? curRightSelection : curLeftSelection;
+        Placement selection = (middlePan && (MInput.Mouse.CheckRightButton || (middlePan && MInput.Mouse.ReleasedRightButton)) || !middlePan && MInput.Keyboard.Check(Keys.LeftAlt, Keys.RightAlt)) ? curRightSelection : curLeftSelection;
         if ((MInput.Mouse.ReleasedLeftButton || (middlePan && MInput.Mouse.ReleasedRightButton)) && canClick && selection != null && Editor.SelectedRoom != null) {
             Entity toAdd = selection.Build(Editor.SelectedRoom);
             UpdateEntity(toAdd);
@@ -100,7 +99,7 @@ public class PlacementTool : Tool {
             UpdateEntity(preview);
 
         if (MInput.Mouse.PressedLeftButton || (middlePan && MInput.Mouse.PressedRightButton))
-            lastPress = Editor.Mouse.World;
+            lastPress = Mouse.World;
         else if (!MInput.Mouse.CheckLeftButton && !(middlePan && MInput.Mouse.CheckRightButton)) {
             lastPress = null;
             startedDrag = false;
@@ -131,7 +130,7 @@ public class PlacementTool : Tool {
     private void RefreshPreview(bool changedPlacement) {
         bool middlePan = Snowberry.Settings.MiddleClickPan;
 
-        Placement selection = (middlePan && (MInput.Mouse.CheckRightButton || MInput.Mouse.ReleasedRightButton) || !middlePan && MInput.Keyboard.Check(Keys.LeftAlt)) ? curRightSelection : curLeftSelection;
+        Placement selection = (middlePan && (MInput.Mouse.CheckRightButton || MInput.Mouse.ReleasedRightButton) || !middlePan && MInput.Keyboard.Check(Keys.LeftAlt, Keys.RightAlt)) ? curRightSelection : curLeftSelection;
         if ((preview == null || changedPlacement) && selection != null) {
             preview = selection.Build(Editor.SelectedRoom);
         } else if (selection == null)
@@ -139,8 +138,8 @@ public class PlacementTool : Tool {
     }
 
     private void UpdateEntity(Entity e) {
-        var ctrl = MInput.Keyboard.Check(Keys.LeftControl) || MInput.Keyboard.Check(Keys.RightControl);
-        Vector2 mpos = ctrl ? Editor.Mouse.World : Editor.Mouse.World.RoundTo(8);
+        var ctrl = MInput.Keyboard.Check(Keys.LeftControl, Keys.RightControl);
+        Vector2 mpos = ctrl ? Mouse.World : Mouse.World.RoundTo(8);
         UpdateSize(e, mpos);
 
         if (lastPress != null) {

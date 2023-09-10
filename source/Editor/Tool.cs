@@ -1,8 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Monocle;
 using Snowberry.Editor.Tools;
-using Snowberry.Editor.UI;
 using System.Collections.Generic;
+using Snowberry.UI;
 
 namespace Snowberry.Editor;
 
@@ -30,6 +30,8 @@ public abstract class Tool{
     public virtual void RenderScreenSpace(){}
 
     public virtual void RenderWorldSpace(){}
+
+    public virtual UIElement CreateActionBar() => null;
 
     public virtual void SuggestCursor(ref MTexture cursor, ref Vector2 justify){}
 }

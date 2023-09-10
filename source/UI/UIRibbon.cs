@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace Snowberry.Editor.UI; 
+namespace Snowberry.UI; 
 
 public class UIRibbon : UIElement {
     private Font font;

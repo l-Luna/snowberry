@@ -1,9 +1,10 @@
-﻿using Microsoft.Xna.Framework;
-using Monocle;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using Monocle;
+using Snowberry.Editor;
 
-namespace Snowberry.Editor.UI;
+namespace Snowberry.UI;
 
 public class UIToolbar : UIElement {
     public Color BG = Calc.HexToColor("202929");
@@ -21,9 +22,10 @@ public class UIToolbar : UIElement {
 
     protected List<UIButton> toolButtons = new();
 
-    public UIToolbar(Editor editor) {
+    public UIToolbar(Editor.Editor editor) {
         CurrentTool = 0;
         BG.A = 185;
+        GrabsClick = true;
 
         for (int i = 0; i < Tool.Tools.Count; i++) {
             Tool tool = Tool.Tools[i];
@@ -60,12 +62,12 @@ public class UIToolbar : UIElement {
         }
 
         // Ctrl-any digit to select that tool
-        if (Editor.Instance.CanTypeShortcut())
+        if (Editor.Editor.Instance.CanTypeShortcut())
             if (MInput.Keyboard.Check(Keys.LeftControl) || MInput.Keyboard.Check(Keys.RightControl))
                 for (var idx = 0; idx < Util.DigitKeys.Count; idx++)
                     if (MInput.Keyboard.Pressed(Util.DigitKeys[idx])) {
                         if (Tool.Tools.Count > idx)
-                            Editor.Instance.SwitchTool(idx);
+                            Editor.Editor.Instance.SwitchTool(idx);
                         break;
                     }
     }

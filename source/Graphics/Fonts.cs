@@ -2,7 +2,6 @@
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Monocle;
 using System.Collections.Generic;
 using System.Xml;
 

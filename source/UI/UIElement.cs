@@ -1,11 +1,11 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
-using Monocle;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
+using Monocle;
 
-namespace Snowberry.Editor.UI;
+namespace Snowberry.UI;
 
 public class UIElement {
     private readonly List<UIElement> toRemove = new();
@@ -16,6 +16,7 @@ public class UIElement {
     public List<UIElement> Children = new();
     public bool Visible = true;
     public bool RenderChildren = true;
+    public bool Destroyed = false;
 
     public Vector2 Position;
     public int Width, Height;
@@ -24,7 +25,7 @@ public class UIElement {
     public bool GrabsScroll = false;
     public bool GrabsClick = false;
 
-    public string Tag = "";
+    public object Tag = "";
 
     public Rectangle Bounds => new((int)(Position.X + (Parent?.Bounds.X ?? 0) + (Parent?.BoundsOffset().X ?? 0)), (int)(Position.Y + (Parent?.Bounds.Y ?? 0) + (Parent?.BoundsOffset().Y ?? 0)), Width, Height);
 
@@ -54,11 +55,30 @@ public class UIElement {
             foreach (UIElement element in Children)
                 if (element.Visible)
                     element.Render(position + element.Position);
+
+        if (UIScene.DebugShowUIBounds) {
+            Rectangle r = Bounds;
+            Color c = Color.Red;
+            // differentiate between "hovered but out of parent's (broken) bounds" and "hovered and in-bounds" for e.g. tooltips
+            var point = Mouse.Screen.ToPoint();
+            if (r.Contains(point)) {
+                UIElement p = this;
+                c = Color.Green;
+                while ((p = p.Parent) != null)
+                    if (!p.Bounds.Contains(point)) {
+                        c = Color.Orange;
+                        break;
+                    }
+            }
+            Draw.HollowRect(r, c);
+        }
     }
 
     protected virtual void Initialize() { }
 
-    protected virtual void OnDestroy() { }
+    protected virtual void OnDestroy() {
+        Destroyed = true;
+    }
 
     public virtual string Tooltip() => null;
 
@@ -121,6 +141,7 @@ public class UIElement {
     }
 
     public void RemoveSelf() {
+        Destroy();
         Parent?.Remove(this);
     }
 
@@ -128,24 +149,30 @@ public class UIElement {
         toRemove.Add(elem);
     }
 
-    public void RemoveAll(ICollection<UIElement> elems) {
+    public void RemoveNow(UIElement elem) {
+        Children.Remove(elem);
+    }
+
+    public void RemoveAll(IEnumerable<UIElement> elems) {
         foreach (var item in elems)
             Remove(item);
     }
 
-    public T HoveredChildProperty<T>(Func<UIElement, T> getter, T ignore = default) {
-        if (!Equals(getter(this), ignore)) {
-            return getter(this);
-        }
+    public void RemoveAllNow(IEnumerable<UIElement> elems) {
+        foreach (var item in elems)
+            RemoveNow(item);
+    }
 
-        foreach (var child in Children) {
-            if (child.Bounds.Contains((int)Editor.Mouse.Screen.X, (int)Editor.Mouse.Screen.Y)) {
+    public T HoveredChildProperty<T>(Func<UIElement, T> getter, T ignore = default) {
+        if (!Equals(getter(this), ignore))
+            return getter(this);
+
+        foreach (var child in Children)
+            if (child.Bounds.Contains(Mouse.Screen.ToPoint())) {
                 var p = child.HoveredChildProperty(getter, ignore);
-                if (!Equals(p, ignore)) {
+                if (!Equals(p, ignore))
                     return p;
-                }
             }
-        }
 
         return ignore;
     }
@@ -163,8 +190,8 @@ public class UIElement {
     }
 
     private bool ConsumeClick() {
-        if (!Editor.MouseClicked) {
-            Editor.MouseClicked = true;
+        if (!UIScene.Instance.MouseClicked) {
+            UIScene.Instance.MouseClicked = true;
             return true;
         }
 
@@ -172,45 +199,44 @@ public class UIElement {
     }
 
     protected bool ConsumeLeftClick(bool pressed = true, bool held = false, bool released = false) {
-        if ((!pressed || MInput.Mouse.PressedLeftButton) && (!held || MInput.Mouse.CheckLeftButton) && (!released || MInput.Mouse.ReleasedLeftButton)) {
+        if ((!pressed || MInput.Mouse.PressedLeftButton) && (!held || MInput.Mouse.CheckLeftButton) && (!released || MInput.Mouse.ReleasedLeftButton))
             return ConsumeClick();
-        }
 
         return false;
     }
 
     protected bool ConsumeAltClick(bool pressed = true, bool held = false, bool released = false) {
         if (Snowberry.Settings.MiddleClickPan) {
-            if ((!pressed || MInput.Mouse.PressedRightButton) && (!held || MInput.Mouse.CheckRightButton) && (!released || MInput.Mouse.ReleasedRightButton)) {
+            if ((!pressed || MInput.Mouse.PressedRightButton) && (!held || MInput.Mouse.CheckRightButton) && (!released || MInput.Mouse.ReleasedRightButton))
                 return ConsumeClick();
-            }
 
             return false;
-        } else {
-            return (MInput.Keyboard.Check(Keys.LeftAlt) || MInput.Keyboard.Check(Keys.RightAlt)) && ConsumeLeftClick(pressed, held, released);
-        }
-    }
-
-    public T ChildWithTag<T>(string tag) where T : UIElement {
-        return (T)Children.Where(child => string.Equals(child.Tag, tag)).FirstOrDefault(child => child is T);
-    }
-
-    public T NestedChildWithTag<T>(string tag) where T : UIElement {
-        var immediate = ChildWithTag<T>(tag);
-        if (immediate != null)
-            return immediate;
-
-        foreach (var child in Children) {
-            var ret = child.NestedChildWithTag<T>(tag);
-            if (ret != null)
-                return ret;
         }
 
-        return null;
+        return (MInput.Keyboard.Check(Keys.LeftAlt) || MInput.Keyboard.Check(Keys.RightAlt)) && ConsumeLeftClick(pressed, held, released);
     }
 
-    public Vector2 GetBoundsPos() {
-        return new Vector2(Bounds.X, Bounds.Y);
+    public T ChildWithTag<T>(string tag) where T : UIElement =>
+        Children.OfType<T>().FirstOrDefault(child => Equals(child.Tag, tag));
+
+    public T NestedChildWithTag<T>(string tag) where T : UIElement =>
+        ChildWithTag<T>(tag) ?? Children.Select(child => child.NestedChildWithTag<T>(tag)).FirstOrDefault(ret => ret != null);
+
+    public Vector2 GetBoundsPos() => new(Bounds.X, Bounds.Y);
+
+    public void CalculateBounds() {
+        // based on the bounds of children
+        if (Children.Count > 0) {
+            int right = int.MinValue, bottom = int.MinValue;
+
+            foreach (var bounds in Children.Select(el => el.Bounds)) {
+                if (bounds.Right > right) right = bounds.Right;
+                if (bounds.Bottom > bottom) bottom = bounds.Bottom;
+            }
+
+            Width = right;
+            Height = bottom;
+        }
     }
 
     public static UIElement Regroup(params UIElement[] elems) {
@@ -220,7 +246,7 @@ public class UIElement {
     }
 
     public static void RegroupIn<T>(T group, params UIElement[] elems) where T : UIElement {
-        if (elems != null && elems.Length > 0) {
+        if (elems is { Length: > 0 }) {
             int ax = int.MaxValue, ay = int.MaxValue;
             int bx = int.MinValue, by = int.MinValue;
 

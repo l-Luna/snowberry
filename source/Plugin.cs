@@ -74,7 +74,7 @@ public abstract class Plugin {
 
     protected static object ObjectToStr(object obj) {
         return obj switch {
-            Color color => BitConverter.ToString(new[] { color.R, color.G, color.B }).Replace("-", string.Empty),
+            Color color => color.IntoString(),
             Enum => obj.ToString(),
             char ch => ch.ToString(),
             Tileset ts => ts.Key.ToString(),

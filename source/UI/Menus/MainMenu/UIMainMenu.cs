@@ -1,9 +1,9 @@
-﻿using Monocle;
-using Microsoft.Xna.Framework;
+﻿using System;
 using Celeste;
-using System;
+using Microsoft.Xna.Framework;
+using Monocle;
 
-namespace Snowberry.Editor.UI.Menus;
+namespace Snowberry.UI.Menus.MainMenu;
 
 public class UIMainMenu : UIElement {
     public static UIMainMenu Instance { get; private set; }
@@ -154,7 +154,7 @@ public class UIMainMenu : UIElement {
             case States.Create:
                 fade = Calc.Approach(fade, 1f, Engine.DeltaTime * 2f);
                 if (Math.Abs(fade - 1f) < 0.05) {
-                    Editor.OpenNew();
+                    Editor.Editor.OpenNew();
                 }
 
                 break;

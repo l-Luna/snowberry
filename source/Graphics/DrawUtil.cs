@@ -2,9 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 using System;
-using System.Globalization;
 using Celeste;
-using Celeste.Mod;
 
 namespace Snowberry;
 

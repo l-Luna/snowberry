@@ -52,7 +52,7 @@ public class PluginInfo {
             bool isStyleground = typeof(Styleground).IsAssignableFrom(t);
 
             foreach (PluginAttribute pl in t.GetCustomAttributes<PluginAttribute>(inherit: false)) {
-                if (pl.Name == null || pl.Name == string.Empty) {
+                if (string.IsNullOrEmpty(pl.Name)) {
                     Snowberry.Log(LogLevel.Warn, $"Found plugin with null or empty name! skipping... (Type: {t})");
                     continue;
                 }

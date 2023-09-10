@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 
 namespace Snowberry.Editor.Entities;
 
-[Plugin("lightningBreakerBox")]
+[Plugin("lightningBlock")]
 public class Plugin_LightningBreakerBox : Entity {
     [Option("flipX")] public bool FlipX = false;
     [Option("musicProgress")] public int MusicProgress = -1;
@@ -16,14 +16,14 @@ public class Plugin_LightningBreakerBox : Entity {
         base.Render();
 
         int facing = FlipX ? -1 : 1;
-        GFX.Game["objects/breakerBox/idle00"].DrawCentered(Position, Color.White, new Vector2(facing, 1));
+        GFX.Game["objects/breakerBox/idle00"].DrawCentered(Position + new Vector2(16), Color.White, new Vector2(facing, 1));
     }
 
     protected override IEnumerable<Rectangle> Select() {
-        yield return RectOnRelative(new(34), justify: new(0.5f));
+        yield return RectOnRelative(new(34));
     }
 
     public static void AddPlacements() {
-        Placements.Create("Lightning Breaker Box", "lightningBreakerBox");
+        Placements.Create("Lightning Breaker Box", "lightningBlock");
     }
 }

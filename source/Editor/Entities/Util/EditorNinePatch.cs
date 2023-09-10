@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Celeste.Mod.Helpers;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
 using Monocle;
 
 namespace Snowberry.Editor.Entities.Util;

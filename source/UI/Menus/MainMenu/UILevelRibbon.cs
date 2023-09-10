@@ -1,11 +1,11 @@
-﻿using Monocle;
-using Microsoft.Xna.Framework;
-using Celeste;
-using System;
+﻿using System;
 using System.Linq;
+using Celeste;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using Monocle;
 
-namespace Snowberry.Editor.UI.Menus;
+namespace Snowberry.UI.Menus.MainMenu;
 
 public class UILevelRibbon : UIRibbon {
     private readonly UILevelSelector selector;
@@ -59,7 +59,7 @@ public class UILevelRibbon : UIRibbon {
         Name = area.Name;
         raw = Dialog.Has(Name) ? $"» {Name}" : "...";
 
-        ModeProperties[] modes = area.Mode.Where(m => m != null).ToArray();
+        ModeProperties[] modes = area.Mode.Where(m => m?.MapData != null).ToArray();
         if (dropdown = modes.Length > 1) {
             h = modes.Length * 13 + 1;
             for (int i = 0; i < modes.Length; i++) {
@@ -100,16 +100,16 @@ public class UILevelRibbon : UIRibbon {
     public override void Update(Vector2 position = default) {
         base.Update(position);
 
-        int mouseX = (int)Editor.Mouse.Screen.X;
-        int mouseY = (int)Editor.Mouse.Screen.Y;
-        hover = !Editor.Message.Shown && Visible &&
+        int mouseX = (int)Mouse.Screen.X;
+        int mouseY = (int)Mouse.Screen.Y;
+        hover = !UIScene.Instance.Message.Shown && Visible &&
                 new Rectangle((int)position.X + 16, (int)position.Y - 1, Width + w, Height + H + 2).Contains(mouseX, mouseY);
 
         lerp = Calc.Approach(lerp, (hover || pressing).Bit(), Engine.DeltaTime * 6f);
         listLerp = Calc.Approach(listLerp, (selector.LevelRibbonAnim < n).Bit(), Engine.DeltaTime * 4f);
 
         if (Visible) {
-            if (!Editor.Message.Shown && hover && ConsumeLeftClick()) {
+            if (!UIScene.Instance.Message.Shown && hover && ConsumeLeftClick()) {
                 if (dropdown) {
                     if (!HoveringChildren()) {
                         openLerp = open.Bit();
@@ -120,21 +120,26 @@ public class UILevelRibbon : UIRibbon {
                     pressing = true;
                 }
             }
-            if (Editor.Message.Shown || pressing && ConsumeLeftClick(pressed: false, released: true)) {
+            if (UIScene.Instance.Message.Shown || pressing && ConsumeLeftClick(pressed: false, released: true)) {
                 pressing = false;
                 if (hover) {
                     if (MInput.Keyboard.CurrentState[Keys.LeftControl] == KeyState.Down || MInput.Keyboard.CurrentState[Keys.RightControl] == KeyState.Down)
-                        Editor.Open(mode.MapData);
+                        Editor.Editor.Open(mode.MapData);
                     else {
-                        Editor.Message.Clear();
+                        UIScene.Instance.Message.Clear();
 
-                        Editor.Message.AddElement(ConfirmLoadMessage(), 0.5f, 0.5f, 0.5f, -0.1f);
-                        var buttons = UIMessage.YesAndNoButtons(() => Editor.Open(mode.MapData), () => Editor.Message.Shown = false, 0, 4, 0.5f, 0f);
-                        Editor.Message.AddElement(buttons, 0.5f, 0.5f, 0.5f, 1.1f);
+                        UIScene.Instance.Message.AddElement(ConfirmLoadMessage(), 0.5f, 0.5f, 0.5f, -0.1f);
+                        var buttons = UIMessage.YesAndNoButtons(() => Editor.Editor.Open(mode.MapData), () => UIScene.Instance.Message.Shown = false, 0, 4, 0.5f, 0f);
+                        UIScene.Instance.Message.AddElement(buttons, 0.5f, 0.5f, 0.5f, 1.1f);
 
-                        Editor.Message.Shown = true;
+                        UIScene.Instance.Message.Shown = true;
                     }
                 }
+            }
+            if (MInput.Mouse.ReleasedLeftButton) {
+                // we only actually activate if the mouse was released on this button + it's visible,
+                // but we still need to make it visually unpress if it's dragged off and released
+                pressing = false;
             }
         }
 

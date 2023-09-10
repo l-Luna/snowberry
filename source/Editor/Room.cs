@@ -234,8 +234,8 @@ public class Room {
     internal void CalculateScissorRect(Editor.BufferCamera camera) {
         Vector2 offset = Position * 8;
 
-        Vector2 zero = Calc.Round(Vector2.Transform(offset, camera.Matrix));
-        Vector2 size = Calc.Round(Vector2.Transform(offset + new Vector2(Width * 8, Height * 8), camera.Matrix) - zero);
+        Vector2 zero = Vector2.Transform(offset, camera.Matrix).Round();
+        Vector2 size = (Vector2.Transform(offset + new Vector2(Width * 8, Height * 8), camera.Matrix) - zero).Round();
         ScissorRect = new Rectangle(
             (int)zero.X, (int)zero.Y,
             (int)size.X, (int)size.Y);
@@ -262,17 +262,12 @@ public class Room {
             decal.Render(offset);
 
         // Entities
-        foreach (Entity entity in Entities) {
-            Calc.PushRandom(entity.GetHashCode());
+        Calc.PushRandom(GetHashCode());
+        foreach (Entity entity in Entities)
             entity.RenderBefore();
-            Calc.PopRandom();
-        }
-
-        foreach (Entity entity in Entities) {
-            Calc.PushRandom(entity.GetHashCode());
+        foreach (Entity entity in Entities)
             entity.Render();
-            Calc.PopRandom();
-        }
+        Calc.PopRandom();
 
         // FgTiles
         for (int x = startX; x < endX; x++)
@@ -295,7 +290,9 @@ public class Room {
                 foreach (var rect in Editor.SelectedObjects.SelectMany(s => s.Rectangles()))
                     Draw.Rect(rect, Color.Blue * 0.25f);
         }
+    }
 
+    internal void PostRender() {
         DirtyTrackedEntities.Clear();
 
         foreach (var e in Entities)
@@ -315,7 +312,7 @@ public class Room {
                 Rectangle mainRect = s.Entity.SelectionRectangles[0];
                 string str = $"#{s.Entity.EntityID}";
                 Vector2 size = Fonts.Regular.Measure(str) * 0.5f;
-                float opacity = mainRect.Contains((int)Editor.Mouse.World.X, (int)Editor.Mouse.World.Y) ? 1 : 0.4f;
+                float opacity = mainRect.Contains((int)Mouse.World.X, (int)Mouse.World.Y) ? 1 : 0.4f;
                 Draw.Rect(new Vector2(mainRect.X, mainRect.Y), size.X + 3, size.Y + 2, Color.Black * opacity);
                 Fonts.Regular.Draw(str,  new(mainRect.X + 1, mainRect.Y + 1), new(0.5f), Color.White);
             }
@@ -409,15 +406,14 @@ public class Room {
             };
             entity.SaveAttrs(entityElem);
 
-            foreach (var node in entity.Nodes) {
-                Element n = new Element {
-                    Attributes = new Dictionary<string, object> {
+            foreach (var node in entity.Nodes)
+                entityElem.Children.Add(new Element {
+                    Name = "node", // for loenn compatibility
+                    Attributes = new() {
                         ["x"] = node.X - X * 8,
                         ["y"] = node.Y - Y * 8
                     }
-                };
-                entityElem.Children.Add(n);
-            }
+                });
 
             entitiesElement.Children.Add(entityElem);
         }
@@ -444,75 +440,76 @@ public class Room {
             };
             trigger.SaveAttrs(triggersElem);
 
-            foreach (var node in trigger.Nodes) {
-                Element n = new Element {
+            foreach (var node in trigger.Nodes)
+                triggersElem.Children.Add(new Element {
+                    Name = "node", // for loenn compatibility
                     Attributes = new Dictionary<string, object> {
                         ["x"] = node.X - X * 8,
                         ["y"] = node.Y - Y * 8
                     }
-                };
-                triggersElem.Children.Add(n);
-            }
+                });
 
             triggersElement.Children.Add(triggersElem);
         }
 
-        Element fgDecalsElem = new Element();
-        fgDecalsElem.Name = "fgdecals";
-        fgDecalsElem.Children = new List<Element>();
+        Element fgDecalsElem = new Element {
+            Name = "fgdecals",
+            Children = new List<Element>()
+        };
         ret.Children.Add(fgDecalsElem);
         foreach (var decal in FgDecals) {
-            Element decalElem = new Element {
+            fgDecalsElem.Children.Add(new Element {
                 Attributes = new Dictionary<string, object> {
                     ["x"] = decal.Position.X,
                     ["y"] = decal.Position.Y,
                     ["scaleX"] = decal.Scale.X,
                     ["scaleY"] = decal.Scale.Y,
-                    ["texture"] = decal.Texture
+                    ["texture"] = decal.Texture,
+                    ["color"] = decal.Color.IntoString(),
+                    ["rotation"] = decal.Rotation
                 }
-            };
-            fgDecalsElem.Children.Add(decalElem);
+            });
         }
 
-        Element bgDecalsElem = new Element();
-        bgDecalsElem.Name = "bgdecals";
-        bgDecalsElem.Children = new List<Element>();
+        Element bgDecalsElem = new Element {
+            Name = "bgdecals",
+            Children = new List<Element>()
+        };
         ret.Children.Add(bgDecalsElem);
         foreach (var decal in BgDecals) {
-            Element decalElem = new Element {
+            bgDecalsElem.Children.Add(new Element {
                 Attributes = new Dictionary<string, object> {
                     ["x"] = decal.Position.X,
                     ["y"] = decal.Position.Y,
                     ["scaleX"] = decal.Scale.X,
                     ["scaleY"] = decal.Scale.Y,
-                    ["texture"] = decal.Texture
+                    ["texture"] = decal.Texture,
+                    ["color"] = decal.Color.IntoString(),
+                    ["rotation"] = decal.Rotation
                 }
-            };
-            bgDecalsElem.Children.Add(decalElem);
+            });
         }
 
-        StringBuilder fgTiles = new StringBuilder();
+        StringBuilder fgTilesTxt = new StringBuilder();
         for (int y = 0; y < fgTileMap.Rows; y++) {
-            for (int x = 0; x < fgTileMap.Columns; x++) {
-                fgTiles.Append(fgTileMap[x, y]);
-            }
+            for (int x = 0; x < fgTileMap.Columns; x++)
+                fgTilesTxt.Append(fgTileMap[x, y]);
 
-            fgTiles.Append("\n");
+            fgTilesTxt.Append("\n");
         }
 
-        StringBuilder bgTiles = new StringBuilder();
+        StringBuilder bgTilesTxt = new StringBuilder();
         for (int y = 0; y < bgTileMap.Rows; y++) {
-            for (int x = 0; x < bgTileMap.Columns; x++) {
-                bgTiles.Append(bgTileMap[x, y]);
-            }
+            for (int x = 0; x < bgTileMap.Columns; x++)
+                bgTilesTxt.Append(bgTileMap[x, y]);
 
-            bgTiles.Append("\n");
+            bgTilesTxt.Append("\n");
         }
 
         Element fgSolidsElem = new Element {
             Name = "solids",
             Attributes = new Dictionary<string, object> {
-                ["innerText"] = fgTiles.ToString()
+                ["innerText"] = fgTilesTxt.ToString()
             }
         };
         ret.Children.Add(fgSolidsElem);
@@ -520,7 +517,7 @@ public class Room {
         Element bgSolidsElem = new Element {
             Name = "bg",
             Attributes = new Dictionary<string, object> {
-                ["innerText"] = bgTiles.ToString()
+                ["innerText"] = bgTilesTxt.ToString()
             }
         };
         ret.Children.Add(bgSolidsElem);
@@ -537,8 +534,9 @@ public class Room {
         if (e.Tracked) {
             Type tracking = e.GetType();
             if (!TrackedEntities.ContainsKey(tracking))
-                TrackedEntities[tracking] = new List<Entity>();
+                TrackedEntities[tracking] = new();
             TrackedEntities[tracking].Add(e);
+            DirtyTrackedEntities[tracking] = true;
         }
     }
 

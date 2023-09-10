@@ -1,9 +1,9 @@
-﻿using Microsoft.Xna.Framework;
-using Monocle;
-using System;
+﻿using System;
 using System.Linq;
+using Microsoft.Xna.Framework;
+using Monocle;
 
-namespace Snowberry.Editor.UI;
+namespace Snowberry.UI;
 
 public class UIScrollPane : UIElement {
     public Color BG = Calc.HexToColor("202929") * (185 / 255f);
@@ -27,20 +27,15 @@ public class UIScrollPane : UIElement {
         DrawUtil.WithinScissorRectangle(rect, () => {
             base.Render(position + ScrollOffset());
 
-            // this is extremely stupid
-            // todo: make this not extremely stupid
             if (ShowScrollBar) {
-                UIElement low = null, high = null;
-                foreach (var item in Children) {
-                    if (low == null || item.Position.Y > low.Position.Y) low = item;
-                    if (high == null || item.Position.Y < high.Position.Y) high = item;
-                }
-
-                if (high != null && low != null) {
-                    var scrollPoints = ScrollPoints(13);
-                    var scrollSize = Math.Abs(scrollPoints.X - scrollPoints.Y);
-                    var offset = position.Y - scrollPoints.X;
-                    Draw.Rect(position + new Vector2(Width - 4, (offset / scrollSize) * (Height + 40)), 2, 40, Color.DarkCyan);
+                var hilo = HighLow();
+                float minScroll = Height - hilo.lo, maxScroll = -hilo.hi;
+                if (minScroll < maxScroll) { // otherwise, we can't scroll at all
+                    float offscreen = (maxScroll - minScroll);
+                    // we would like to keep the blank area = offscreen area, so dragging appears to linearly move things
+                    // until we get to very small sizes, then we need to just rely on a minimum
+                    float thumbSize = Math.Max(Height - offscreen, 12);
+                    Draw.Rect(position + new Vector2(Width - 4, (Height - thumbSize) * (1 - (Scroll - minScroll) / offscreen)), 3, thumbSize, Color.DarkCyan * 0.5f);
                 }
             }
         });
@@ -51,13 +46,13 @@ public class UIScrollPane : UIElement {
     }
 
     public override void Update(Vector2 position = default) {
-        bool hovered = Bounds.Contains((int)Editor.Mouse.Screen.X, (int)Editor.Mouse.Screen.Y);
+        bool hovered = Bounds.Contains((int)Mouse.Screen.X, (int)Mouse.Screen.Y);
 
         // pretend that the mouse has already been clicked if the mouse is outside of the scroll pane's bounds
-        bool mouseClicked = Editor.MouseClicked;
-        Editor.MouseClicked = !hovered || mouseClicked;
+        bool mouseClicked = UIScene.Instance.MouseClicked;
+        UIScene.Instance.MouseClicked = !hovered || mouseClicked;
         base.Update(position + ScrollOffset());
-        Editor.MouseClicked = mouseClicked;
+        UIScene.Instance.MouseClicked = mouseClicked;
 
         if (hovered)
             ScrollBy(MInput.Mouse.WheelDelta);
@@ -72,25 +67,13 @@ public class UIScrollPane : UIElement {
     protected override bool RenderBg() => false;
 
     public void ScrollBy(float amount) {
-        //var points = ScrollPoints(1);
-        //if ((amount > 0 && points.X < 0) || (amount < 0 && points.Y > Height))
+        // note that Scroll is almost always negative, hence the maximum value is always negative unless some element has negative coords
         var hilo = HighLow();
         Scroll += amount;
-        Scroll = Clamp(Scroll, Height - hilo.Item2, -hilo.Item1);
+        Scroll = Clamp(Scroll, Height - hilo.lo, -hilo.hi);
     }
 
-    // X,Y = Top, Bottom
-    public Vector2 ScrollPoints(int scrollSpeed) {
-        UIElement low = null, high = null;
-        foreach(var item in Children.Where(item => item.Visible)){
-            if (low == null || item.Position.Y > low.Position.Y) low = item;
-            if (high == null || item.Position.Y < high.Position.Y) high = item;
-        }
-
-        return new Vector2((high != null ? (high.Position.Y + scrollSpeed - TopPadding) : 0) + ScrollOffset().Y, (low != null ? (low.Position.Y + low.Height + scrollSpeed + BottomPadding) : 0) + ScrollOffset().Y);
-    }
-
-    public (float, float) HighLow() {
+    public (float hi, float lo) HighLow() {
         UIElement low = null, high = null;
         foreach(var item in Children.Where(item => item.Visible)){
             if (low == null || item.Position.Y > low.Position.Y) low = item;

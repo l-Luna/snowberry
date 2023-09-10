@@ -1,9 +1,9 @@
-﻿using Microsoft.Xna.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Microsoft.Xna.Framework;
 
-namespace Snowberry.Editor.UI; 
+namespace Snowberry.UI; 
 
 public class UISearchBar<T> : UITextField {
     public T[] Entries;

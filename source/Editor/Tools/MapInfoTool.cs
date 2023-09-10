@@ -1,8 +1,10 @@
-﻿using Celeste;
+﻿using System;
+using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
-using Snowberry.Editor.UI;
-using Snowberry.Editor.UI.Menus;
+using Snowberry.UI;
+using Snowberry.UI.Menus;
+using static Snowberry.Editor.Triggers.Plugin_ChangeInventoryTrigger;
 
 namespace Snowberry.Editor.Tools;
 
@@ -48,6 +50,17 @@ public class MapInfoTool : Tool {
         ret.AddBelow(UIPluginOptionList.StringOption("FG tiles xml", map.Meta.ForegroundTiles ?? "", i => map.Meta.ForegroundTiles = i), optionOffset);
         ret.AddBelow(UIPluginOptionList.StringOption("BG tiles xml", map.Meta.BackgroundTiles ?? "", i => map.Meta.BackgroundTiles = i), optionOffset);
         ret.AddBelow(UIPluginOptionList.StringOption("anim. tiles xml", map.Meta.AnimatedTiles ?? "", i => map.Meta.AnimatedTiles = i), optionOffset);
+
+        // mode meta
+        ret.AddBelow(UIPluginOptionList.BoolOption("override a-side meta", map.Meta.OverrideASideMeta ?? false, i => map.Meta.OverrideASideMeta = i), optionOffset);
+        ret.AddBelow(new UILabel("current side :"), new(12, 6));
+        ret.AddBelow(UIPluginOptionList.StringOption("poem dialog key", map.Meta.Modes[0].PoemID ?? "", i => map.Meta.Modes[0].PoemID = i), optionOffset);
+        ret.AddBelow(UIPluginOptionList.StringOption("starting room", map.Meta.Modes[0].StartLevel ?? "", i => map.Meta.Modes[0].StartLevel = i), optionOffset);
+        ret.AddBelow(UIPluginOptionList.DropdownOption("starting inventory", Enum.TryParse(map.Meta.Modes[0].Inventory, false, out InventoryType inv) ? inv : InventoryType.Default, i => map.Meta.Modes[0].Inventory = i.ToString()), optionOffset);
+        ret.AddBelow(UIPluginOptionList.BoolOption("end level on heart", map.Meta.Modes[0].HeartIsEnd ?? false, i => map.Meta.Modes[0].HeartIsEnd = i), optionOffset);
+        ret.AddBelow(UIPluginOptionList.BoolOption("seeker slowdown", map.Meta.Modes[0].SeekerSlowdown ?? true, i => map.Meta.Modes[0].SeekerSlowdown = i), optionOffset);
+        ret.AddBelow(UIPluginOptionList.BoolOption("carry theo in boosters", map.Meta.Modes[0].TheoInBubble ?? false, i => map.Meta.Modes[0].TheoInBubble = i), optionOffset);
+        ret.AddBelow(UIPluginOptionList.BoolOption("ignore music layers", map.Meta.Modes[0].IgnoreLevelAudioLayerData ?? false, i => map.Meta.Modes[0].IgnoreLevelAudioLayerData = i), optionOffset);
 
         return ret;
     }

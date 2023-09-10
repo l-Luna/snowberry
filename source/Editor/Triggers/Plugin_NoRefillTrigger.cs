@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework;
-using static Celeste.Trigger;
 
 namespace Snowberry.Editor.Triggers;
 

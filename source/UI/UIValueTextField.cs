@@ -1,8 +1,8 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Monocle;
-using System;
 
-namespace Snowberry.Editor.UI;
+namespace Snowberry.UI;
 
 public class UIValueTextField<T> : UITextField {
     public new Color Line = Color.Teal;

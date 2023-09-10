@@ -2,7 +2,6 @@
 using Celeste;
 using Monocle;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 
 namespace Snowberry.Editor.Entities;
 

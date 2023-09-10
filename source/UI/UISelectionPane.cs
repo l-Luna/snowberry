@@ -1,8 +1,9 @@
-﻿using Microsoft.Xna.Framework;
-using Snowberry.Editor.UI.Menus;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Microsoft.Xna.Framework;
+using Snowberry.Editor;
+using Snowberry.UI.Menus;
 
-namespace Snowberry.Editor.UI;
+namespace Snowberry.UI;
 
 public class UISelectionPane : UIScrollPane{
 

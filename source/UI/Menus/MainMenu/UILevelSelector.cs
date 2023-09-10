@@ -1,9 +1,9 @@
-﻿using Monocle;
-using Microsoft.Xna.Framework;
+﻿using System.Linq;
 using Celeste;
-using System.Linq;
+using Microsoft.Xna.Framework;
+using Monocle;
 
-namespace Snowberry.Editor.UI.Menus;
+namespace Snowberry.UI.Menus.MainMenu;
 
 public class UILevelSelector : UIElement {
     public float LevelRibbonAnim;

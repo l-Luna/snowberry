@@ -33,7 +33,13 @@ public class Map {
     internal Map(string name) {
         Name = name;
         From = AreaData.Get("Snowberry/Playtest").ToKey();
-        Meta = new MapMeta();
+        Meta = new MapMeta {
+            Modes = new MapMetaModeProperties[3]
+        };
+        for (int i = 0; i < Meta.Modes.Length; i++)
+            Meta.Modes[i] ??= new();
+        // all other defaults are the same as "leave it unset" except this one }:/
+        Meta.Modes[0].SeekerSlowdown = true; // TODO: set other defaults
 
         SetupGraphics(Meta);
         Tileset.Load();
@@ -50,8 +56,20 @@ public class Map {
         // TODO: crashes in vanilla maps, pretty sure it's not actually necessary?
         //new MapDataFixup(data).Process(FromRaw);
 
-        if (FromRaw.Children?.Find(element => element.Name == "meta") is {} metaElem)
+        if (FromRaw.Children?.Find(element => element.Name == "meta") is {} metaElem) {
             Meta = new MapMeta(metaElem);
+            if (Meta.Modes.Length < 3) {
+                var tmp = Meta.Modes; // thank you C#, very cool
+                Array.Resize(ref tmp, 3);
+                Meta.Modes = tmp;
+            }
+            for (int i = 0; i < Meta.Modes.Length; i++)
+                Meta.Modes[i] ??= new();
+            if (metaElem.Children?.Find(element => element.Name == "mode") is {} modeElem)
+                // handled separately in MapData by everest
+                Meta.Modes[0].Parse(modeElem);
+            Meta.Modes[0].SeekerSlowdown ??= true; // see above
+        }
 
         Editor.CopyAreaData(targetData, playtestData);
         SetupGraphics(Meta);
@@ -160,6 +178,11 @@ public class Map {
         }
 
         Draw.SpriteBatch.End();
+    }
+
+    internal void PostRender() {
+        foreach (var room in Rooms)
+            room.PostRender();
     }
 
     internal void HQRender(Editor.BufferCamera camera) {
@@ -317,6 +340,20 @@ public class Map {
             meta.Children.Add(cm);
         }
 
+        Element mode = new() {
+            Name = "mode",
+            Children = new()
+        };
+        var modeProp = Meta.Modes[0];
+        mode.SetAttrNn("IgnoreLevelAudioLayerData", modeProp.IgnoreLevelAudioLayerData);
+        mode.SetAttrNn("Inventory", modeProp.Inventory);
+        mode.SetAttrNn("PoemID", modeProp.PoemID);
+        mode.SetAttrNn("StartLevel", modeProp.StartLevel);
+        mode.SetAttrNn("HeartIsEnd", modeProp.HeartIsEnd);
+        mode.SetAttrNn("SeekerSlowdown", modeProp.SeekerSlowdown);
+        mode.SetAttrNn("TheoInBubble", modeProp.TheoInBubble);
+        meta.Children.Add(mode);
+
         map.Children.Add(meta);
 
         return map;
@@ -341,7 +378,7 @@ public class Map {
                     ["scrolly"] = styleground.Scroll.Y,
                     ["speedx"] = styleground.Speed.X,
                     ["speedy"] = styleground.Speed.Y,
-                    ["color"] = BitConverter.ToString(new[] { styleground.Color.R, styleground.Color.G, styleground.Color.B }).Replace("-", string.Empty),
+                    ["color"] = styleground.Color.IntoString(),
                     ["alpha"] = styleground.Color.A / 255f,
                     ["flipx"] = styleground.FlipX,
                     ["flipy"] = styleground.FlipY,
