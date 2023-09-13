@@ -1,6 +1,7 @@
 ﻿using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using Snowberry.Editor.Entities.Util;
 using System;
 using System.Collections.Generic;
 using static Celeste.ZipMover;
@@ -24,25 +25,13 @@ public class Plugin_ZipMover : Entity {
         MTexture block, light, cog;
         string innercog;
         bool outline;
-        // Fetch textures
-        switch (Theme) {
-            case Themes.Moon:
-                block = GFX.Game["objects/zipmover/moon/block"];
-                light = GFX.Game["objects/zipmover/moon/light01"];
-                cog = GFX.Game["objects/zipmover/moon/cog"];
-                innercog = "objects/zipmover/moon/innercog";
-                outline = false;
-                break;
 
-            default:
-            case Themes.Normal:
-                block = GFX.Game["objects/zipmover/block"];
-                light = GFX.Game["objects/zipmover/light01"];
-                cog = GFX.Game["objects/zipmover/cog"];
-                innercog = "objects/zipmover/innercog";
-                outline = true;
-                break;
-        }
+        string subfolder = (Theme == Themes.Moon) ? "/moon" : "";
+        block = GFX.Game[$"objects/zipmover{subfolder}/block"];
+        light = GFX.Game[$"objects/zipmover{subfolder}/light01"];
+        cog = GFX.Game[$"objects/zipmover{subfolder}/cog"];
+        innercog = $"objects/zipmover{subfolder}/innercog";
+        outline = (Theme == Themes.Moon) ? false : true;
 
         // Draw path
         Vector2 start = Center;
@@ -61,9 +50,9 @@ public class Plugin_ZipMover : Entity {
         drawBlock(Nodes[0], 0.15f);
         drawBlock(Position, 1);
 
-        void drawBlock(Vector2 position, float opacity){
+        void drawBlock(Vector2 position, float opacity) {
             // Draw black background
-            if(outline)
+            if (outline)
                 Draw.Rect(position.X - 1, position.Y - 1, Width + 2, Height + 2, Color.Black * opacity);
             else
                 Draw.Rect(position.X + 1, position.Y + 1, Width - 2, Height - 2, Color.Black * opacity);
@@ -73,27 +62,27 @@ public class Plugin_ZipMover : Entity {
             int fg = 1;
             float rotation = 0;
             MTexture temp = new MTexture();
-            for(int y = 4; y <= Height - 4f; y += 8){
+            for (int y = 4; y <= Height - 4f; y += 8) {
                 int odd = fg;
-                for(int x = 4; x <= Width - 4f; x += 8){
+                for (int x = 4; x <= Width - 4f; x += 8) {
                     int index = (int)((rotation / ((float)Math.PI / 2f) % 1f) * innerCogs.Count);
                     MTexture iCog = innerCogs[index];
                     Rectangle bounds = new Rectangle(0, 0, iCog.Width, iCog.Height);
                     Vector2 innerbounds = Vector2.Zero;
-                    if(x <= 4){
+                    if (x <= 4) {
                         innerbounds.X = 2f;
                         bounds.X = 2;
                         bounds.Width -= 2;
-                    } else if(x >= Width - 4f){
+                    } else if (x >= Width - 4f) {
                         innerbounds.X = -2f;
                         bounds.Width -= 2;
                     }
 
-                    if(y <= 4){
+                    if (y <= 4) {
                         innerbounds.Y = 2f;
                         bounds.Y = 2;
                         bounds.Height -= 2;
-                    } else if(y >= Height - 4f){
+                    } else if (y >= Height - 4f) {
                         innerbounds.Y = -2f;
                         bounds.Height -= 2;
                     }
@@ -104,37 +93,25 @@ public class Plugin_ZipMover : Entity {
                     rotation += (float)Math.PI / 3f;
                 }
 
-                if(odd == fg){
+                if (odd == fg) {
                     fg = -fg;
                 }
             }
 
             // Draw box
-            int w = Width / 8;
-            int h = Height / 8;
-            for(int x = 0; x < w; x++){
-                for(int y = 0; y < h; y++){
-                    int tx = x == 0 ? 0 : (x == w - 1 ? 16 : 8);
-                    int ty = y == 0 ? 0 : (y == h - 1 ? 16 : 8);
-                    if(tx != 8 || ty != 8)
-                        block.GetSubtexture(tx, ty, 8, 8).Draw(position + new Vector2(x * 8, y * 8));
-                }
-            }
+            EditorNinePatch blockDrawer = new(block);
+            blockDrawer.Draw(position, Width, Height, Color.White * opacity);
 
             // Draw lights
             light.DrawJustified(position + Vector2.UnitX * Width / 2f, new Vector2(0.5f, 0.0f));
         }
     }
 
-    protected override IEnumerable<Rectangle> Select() {
-        if (Nodes.Count != 0) {
-            Vector2 node = Nodes[0];
-            return new[] {
-                Bounds, new Rectangle((int)node.X, (int)node.Y, Width, Height)
-            };
-        }
 
-        return new[] { Bounds };
+    protected override IEnumerable<Rectangle> Select() {
+        yield return RectOnRelative(new Vector2(Width, Height));
+
+        yield return RectOnAbsolute(new(Width, Height), position: Nodes[0]);
     }
 
     public static void AddPlacements() {

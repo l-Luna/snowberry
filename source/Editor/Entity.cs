@@ -54,13 +54,12 @@ public abstract class Entity : Plugin {
         }
     }
 
-    public Entity SetPosition(Vector2 position) {
+    public void SetPosition(Vector2 position) {
         if(position != Position)
             Room?.MarkEntityDirty(this);
 
         Position = position;
         updateSelection = true;
-        return this;
     }
 
     public void Move(Vector2 amount) {
@@ -81,10 +80,15 @@ public abstract class Entity : Plugin {
         }
     }
 
+    public void SetNodes(List<Vector2> nodes) {
+        Nodes.Clear();
+        Nodes.AddRange(nodes);
+        updateSelection = true;
+        Room?.MarkEntityDirty(this);
+    }
+
     public void MoveNode(int i, Vector2 amount) {
         if (i >= 0 && i < Nodes.Count) {
-            if(amount != Vector2.Zero)
-                Room?.MarkEntityDirty(this);
             Nodes[i] += amount;
             updateSelection = true;
         }
@@ -253,6 +257,24 @@ public abstract class Entity : Plugin {
 
         return entity;
     }
+
+    #endregion
+
+    #region Snapshotters
+
+    // everything that might be affected by simply dragging while selected
+    public UndoRedo.Snapshotter<(Vector2 pos, int width, int height, List<Vector2> nodes)> SBounds() => new(
+        () => (Position, Width, Height, Nodes.ToList()),
+        tuple => {
+            Position = tuple.pos;
+            Width = tuple.width;
+            Height = tuple.height;
+            SetNodes(tuple.nodes);
+        }
+    );
+
+    public UndoRedo.Snapshotter<List<Vector2>> SNodes() => new(() => Nodes.ToList(), SetNodes);
+    public UndoRedo.Snapshotter<Vector2> SPosition() => new(() => Position, SetPosition);
 
     #endregion
 }
