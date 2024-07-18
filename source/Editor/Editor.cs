@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -139,6 +139,7 @@ public class Editor : UIScene {
 
     public Map Map { get; private set; }
 
+    internal static bool RoomSelectionLock;
     internal static Room SelectedRoom;
     internal static int SelectedFillerIndex = -1;
     internal static List<Selection> SelectedObjects = new();
@@ -371,7 +372,19 @@ public class Editor : UIScene {
             }
         }, new(6, 4));
 
-        UI.AddBelow(new UILabel(() => $"Room: {SelectedRoom?.Name ?? (SelectedFillerIndex > -1 ? $"(filler: {SelectedFillerIndex})" : "(none)")}"), new(10));
+        UIElement RoomNameBar = new() {
+            Height = Fonts.Regular.LineHeight
+        };
+        UI.AddBelow(RoomNameBar, new(10));
+
+        RoomNameBar.Add(new UILabel(() => $"Room: {SelectedRoom?.Name ?? (SelectedFillerIndex > -1 ? $"(filler: {SelectedFillerIndex})" : "(none)")}"));
+        RoomNameBar.AddRight(new UIKeyboundButton(ActionbarAtlas.GetSubtexture(64, 32, 16, 16), 3, 3) { // should be a toggle button
+            OnPress = () => {
+                RoomSelectionLock = !RoomSelectionLock;
+            },
+            GrabsClick = true, // doesn't work?
+            Key = Keys.L // demonstration purposes only; i know this is a conflict
+        }, new(6, -7));
 
         // anchor the tool panel under Message
         ToolPanelContainer = new() {
@@ -520,12 +533,14 @@ public class Editor : UIScene {
                 Point mouse = new Point((int)Mouse.World.X, (int)Mouse.World.Y);
 
                 worldClick = Mouse.World;
-                var before = SelectedRoom;
-                SelectedRoom = Map.GetRoomAt(mouse);
-                SelectedFillerIndex = Map.GetFillerIndexAt(mouse);
-                // don't let tools click when clicking onto new rooms
-                if (SelectedRoom != before)
-                    canClick = false;
+                if (!RoomSelectionLock) {
+                    var before = SelectedRoom;
+                    SelectedRoom = Map.GetRoomAt(mouse);
+                    SelectedFillerIndex = Map.GetFillerIndexAt(mouse);
+                    // don't let tools click when clicking onto new rooms
+                    if (SelectedRoom != before)
+                        canClick = false;
+                }
             }
         }
 

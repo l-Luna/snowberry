@@ -145,6 +145,9 @@ public class Map {
 
         List<Room> visibleRooms = [];
         foreach (Room room in Rooms) {
+            if (room == Editor.SelectedRoom)
+                continue;
+
             Rectangle rect = new Rectangle(room.Bounds.X * 8, room.Bounds.Y * 8, room.Bounds.Width * 8, room.Bounds.Height * 8);
             if (viewRect.Intersects(rect)) {
                 room.CalculateScissorRect(camera);
@@ -169,7 +172,7 @@ public class Map {
         // render gray over non-selected rooms, over FG stylegrounds
         Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
         foreach (var room in visibleRooms.Where(room => room != Editor.SelectedRoom))
-            Draw.Rect(room.Position * 8, room.Width * 8, room.Height * 8, Color.Black * 0.5f);
+            Draw.Rect(room.Position * 8, room.Width * 8, room.Height * 8, Color.Black * (Editor.RoomSelectionLock ? 0.75f : 0.5f));
         Draw.SpriteBatch.End();
 
         Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
@@ -178,8 +181,29 @@ public class Map {
             Rectangle rect = new Rectangle(filler.X * 8, filler.Y * 8, filler.Width * 8, filler.Height * 8);
             Draw.Rect(rect, Color.White * (Editor.SelectedFillerIndex == i ? 0.14f : 0.1f));
         }
-
         Draw.SpriteBatch.End();
+
+        // the selected room is always rendered, regardless of visibility, since it could have OOB entities
+        if (Editor.SelectedRoom is Room selected) {
+            selected.CalculateScissorRect(camera);
+
+            if (Editor.StylegroundsPreviews)
+                foreach (var styleground in BGStylegrounds.AsEnumerable().Reverse())
+                    if (styleground.IsVisible(selected))
+                        DrawUtil.WithinScissorRectangle(selected.ScissorRect, () => styleground.Render(selected), camera.Matrix, nested: false, styleground.Additive);
+
+            if (Editor.RoomSelectionLock) {
+                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Engine.Instance.GraphicsDevice.RasterizerState, null, camera.Matrix);
+                selected.Render(viewRect);
+                Draw.SpriteBatch.End();
+            } else
+                DrawUtil.WithinScissorRectangle(selected.ScissorRect, () => selected.Render(viewRect), camera.Matrix, nested: false);
+
+            if (Editor.StylegroundsPreviews)
+                foreach (var styleground in FGStylegrounds.AsEnumerable().Reverse())
+                    if (styleground.IsVisible(selected))
+                        DrawUtil.WithinScissorRectangle(selected.ScissorRect, () => styleground.Render(selected), camera.Matrix, nested: false, styleground.Additive);
+        }
     }
 
     internal void PostRender() {
