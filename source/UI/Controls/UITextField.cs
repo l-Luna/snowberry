@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
@@ -11,7 +9,17 @@ namespace Snowberry.UI.Controls;
 
 public class UITextField : UIElement {
 
-    public bool Selected { get; private set; }
+    public bool Selected {
+        get => Keyboard.OnInput == OnInput;
+        set {
+            if (value)
+                Keyboard.OnInput = OnInput;
+            else if (Keyboard.OnInput == OnInput)
+                Keyboard.OnInput = null;
+        }
+    }
+
+
     private bool hovering;
     private int charIndex, selection;
 
@@ -46,13 +54,11 @@ public class UITextField : UIElement {
         Width = Math.Max(1, width);
         Height = font.LineHeight;
 
-        TextInput.OnInput += OnInput;
-
         GrabsClick = true;
     }
 
     private void OnInput(char c) {
-        if (Engine.Commands.Open || !Selected)
+        if (Engine.Commands.Open)
             return;
 
         GetSelection(out int a, out int b);
@@ -137,9 +143,8 @@ public class UITextField : UIElement {
             if (click) {
                 // don't require consuming the click to deselect, but do require it to select
                 if (inside) {
-                    if (ConsumeLeftClick()) {
+                    if (ConsumeLeftClick())
                         Selected = true;
-                    }
                 } else {
                     Selected = false;
                 }
@@ -165,9 +170,9 @@ public class UITextField : UIElement {
             bool shift = MInput.Keyboard.CurrentState[Keys.LeftShift] == KeyState.Down || MInput.Keyboard.CurrentState[Keys.RightShift] == KeyState.Down;
             bool ctrl = MInput.Keyboard.CurrentState[Keys.LeftControl] == KeyState.Down || MInput.Keyboard.CurrentState[Keys.RightControl] == KeyState.Down;
 
-            if (MInput.Keyboard.Pressed(Keys.Escape)) {
+            if (MInput.Keyboard.Pressed(Keys.Escape))
                 Selected = false;
-            } else {
+            else {
                 bool pressedLeft = MInput.Keyboard.Pressed(Keys.Left);
                 bool pressedRight = MInput.Keyboard.Pressed(Keys.Right);
 
@@ -269,6 +274,6 @@ public class UITextField : UIElement {
     protected override void Uninitialize() {
         base.Uninitialize();
 
-        TextInput.OnInput -= OnInput;
+        Selected = false;
     }
 }
