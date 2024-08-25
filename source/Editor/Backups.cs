@@ -41,10 +41,10 @@ public static class Backups{
      * stored in %AppData%/snowberry/backups/<map path>/, or the OS equivalent.
      */
 
-    public static List<Backup> GetBackupsFor(AreaKey key){
-        string dir = BackupsDirectoryFor(key);
+    public static List<Backup> GetBackupsFor(MapId id){
+        string dir = BackupsDirectoryFor(id);
         if(Directory.Exists(dir)){
-            List<Backup> ret = new();
+            List<Backup> ret = [];
 
             foreach (string file in Directory.EnumerateFiles(dir)){
                 if (Path.GetExtension(file) == ".zip"){
@@ -55,7 +55,7 @@ public static class Backups{
                         Meta meta = YamlHelper.Deserializer.Deserialize<Meta>(data);
                         ret.Add(new Backup{
                             Path = file,
-                            For = key,
+                            For = id.Key(),
                             Timestamp = DateTime.Parse(meta.Timestamp, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind).ToLocalTime(),
                             Reason = Enum.TryParse<BackupReason>(meta.Reason, out var r) ? r : BackupReason.Unknown,
                             Filesize = new FileInfo(file).Length
@@ -67,13 +67,13 @@ public static class Backups{
             return ret;
         }
 
-        return new();
+        return [];
     }
 
-    public static void SaveBackup(byte[] data, AreaKey key, BackupReason reason) {
+    public static void SaveBackup(byte[] data, MapId id, BackupReason reason) {
         DateTime now = DateTime.Now.ToUniversalTime();
 
-        var dir = BackupsDirectoryFor(key);
+        var dir = BackupsDirectoryFor(id);
         Directory.CreateDirectory(dir);
 
         string meta = $"""
@@ -90,6 +90,6 @@ public static class Backups{
     public static string BackupsDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "snowberry", "backups");
 
-    public static string BackupsDirectoryFor(AreaKey key) =>
-        Path.Combine(BackupsDirectory, key.SID);
+    public static string BackupsDirectoryFor(MapId id) =>
+        Path.Combine(BackupsDirectory, id.SID());
 }

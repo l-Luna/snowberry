@@ -40,7 +40,7 @@ public class Plugin_MovingPlatform : Entity {
     }
 
     public static KeyValuePair<Color, Color> GetLineColours() {
-        return Editor.VanillaLevelID switch {
+        return Editor.Instance.Map.Id.Key()?.ID switch {
             4 => new(Calc.HexToColor("a4464a"), Calc.HexToColor("86354e")),
             _ => new(Calc.HexToColor("2a1923"), Calc.HexToColor("160b12"))
         };

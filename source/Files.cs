@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Celeste;
 using Celeste.Mod;
 
 namespace Snowberry;
@@ -59,8 +60,14 @@ public static class Files {
         };
     }
 
-    public static string KeyToPath(Celeste.AreaKey key) =>
-        GetRealPath(Path.Combine("Maps", Celeste.AreaData.Get(key).Mode[(int)key.Mode].Path + ".bin"));
+    public static string KeyToPath(AreaKey key) =>
+        GetRealPath(Path.Combine("Maps", AreaData.Get(key).Mode[(int)key.Mode].Path + ".bin"));
+
+    public static bool IsLooseMap(AreaKey key){
+        string qpath = Path.Combine("Maps", AreaData.Get(key).Mode[(int)key.Mode].Path + ".bin");
+        Everest.Content.TryGet(Modize(qpath), out ModAsset asset);
+        return asset is MapBinsInModsModAsset;
+    }
 
     public static bool IsValidFilename(string filename){
         if(filename.Length == 0)
@@ -78,5 +85,15 @@ public static class Files {
             return false;
 
         return true;
+    }
+
+    public static string CleanPath(string path){
+        foreach(char c in IllegalFilenameChars){
+            if(c == '/')
+                continue;
+            path = path.Replace(c, c == '\\' ? '/' : '_');
+        }
+
+        return path;
     }
 }

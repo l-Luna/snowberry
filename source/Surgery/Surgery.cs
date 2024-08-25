@@ -12,10 +12,20 @@ namespace Snowberry.Surgery;
 
 using Element = BinaryPacker.Element;
 
-public class Surgery(string path, Element elem) : UIScene {
+public class Surgery : UIScene {
 
     private UIElement TopBar;
     private UIScrollPane Rest;
+    private string path;
+    private readonly Element elem;
+
+    public Surgery(string path, Element elem) {
+        if (path.StartsWith(Everest.PathGame))
+            path = path[Everest.PathGame.Length..].TrimStart('/', '\\');
+
+        this.path = path;
+        this.elem = elem;
+    }
 
     public override void Begin() {
         Audio.Stop(Audio.CurrentAmbienceEventInstance);
@@ -28,9 +38,6 @@ public class Surgery(string path, Element elem) : UIScene {
     }
 
     internal void SurgeryUi() {
-        if (path.StartsWith(Everest.PathGame))
-            path = path[Everest.PathGame.Length..].TrimStart('/', '\\');
-
         TopBar = new() {
             Background = Color.DarkRed,
             Width = UI.Width,
@@ -48,7 +55,7 @@ public class Surgery(string path, Element elem) : UIScene {
 
         UITextField mapName = new UITextField(Fonts.Regular, 400, Path.GetFileName(path));
         TopBar.AddRight(new UIButton(ActionbarAtlas.GetSubtexture(16, 0, 16, 16), 3, 3) {
-            OnPress = () => BinaryExporter.ExportToFile(elem, mapName.Value + ".bin")
+            OnPress = () => BinaryExporter.ExportToFile(elem, Path.Combine(Everest.Loader.PathMods, mapName.Value + ".bin"))
         }, new(40, 8));
         TopBar.AddRight(mapName, new(8, 14));
 

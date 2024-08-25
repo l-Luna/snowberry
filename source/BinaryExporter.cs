@@ -10,15 +10,14 @@ using Element = Celeste.BinaryPacker.Element;
 
 public static class BinaryExporter {
 
-    public static void ExportMapToFile(Map map, string filename = null) {
-        ExportToFile(map.Export(), filename ?? (Editor.Editor.From is {} v ? Files.KeyToPath(v) : "untitled_snowberry_map.bin"));
+    public static void ExportMapToFile(Map map, string filename) {
+        ExportToFile(map.Export(), filename);
     }
 
-    public static void ExportToFile(Element e, string filename) {
-        string output = Path.Combine(Everest.Loader.PathMods, filename);
-        Directory.CreateDirectory(Path.GetDirectoryName(output));
-        using var file = File.OpenWrite(output);
-        ExportInto(e, filename, file);
+    public static void ExportToFile(Element e, string path) {
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        using var file = File.OpenWrite(path);
+        ExportInto(e, path, file);
     }
 
     public static byte[] ExportToBytes(Element e, string name) {

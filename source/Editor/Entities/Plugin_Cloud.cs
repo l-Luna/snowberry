@@ -11,7 +11,7 @@ public class Plugin_Cloud : Entity {
         base.Render();
 
         string type = Fragile ? "cloudFragile" : "cloud";
-        string suffix = (Editor.From?.Mode ?? AreaMode.Normal) == AreaMode.Normal ? "" : "Remix";
+        string suffix = (Editor.Instance.Map.Id.Key()?.Mode) == AreaMode.Normal ? "" : "Remix";
         FromSprite(type + suffix, "idle")?.DrawCentered(Position);
     }
 

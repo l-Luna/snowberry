@@ -48,7 +48,7 @@ public class Plugin_SinkingPlatform : Entity {
     }
 
     public static string GetVanillaLevelTexture() {
-        return Editor.VanillaLevelID switch {
+        return Editor.Instance.Map.Id.Key()?.ID switch {
             4 => "cliffside",
             _ => null
         };

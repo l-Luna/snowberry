@@ -2,8 +2,10 @@
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
+using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
+using Celeste.Mod;
 
 namespace Snowberry.Editor;
 
@@ -56,6 +58,23 @@ public partial class Decal : Placeable {
         Rotation = data.Rotation;
         Color = Calc.HexToColorWithAlpha(data.ColorHex);
         Depth = data.Depth;
+    }
+
+    public static Decal FromElement(Room room, BinaryPacker.Element element, bool fg) {
+        // from LevelData
+        DecalData decalData = new DecalData {
+            Position = new Vector2(Convert.ToSingle(element.Attributes["x"], CultureInfo.InvariantCulture),
+                Convert.ToSingle(element.Attributes["y"], CultureInfo.InvariantCulture)),
+            Scale = new Vector2(Convert.ToSingle(element.Attributes["scaleX"], CultureInfo.InvariantCulture),
+                Convert.ToSingle(element.Attributes["scaleY"], CultureInfo.InvariantCulture)),
+            Texture = (string)element.Attributes["texture"],
+            Rotation = element.AttrFloat("rotation"),
+            ColorHex = element.Attr("color")
+        };
+        if (element.HasAttr("depth"))
+            decalData.Depth = element.AttrNullableInt("depth");
+
+        return new Decal(room, decalData, fg);
     }
 
     public void Render() {

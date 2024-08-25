@@ -20,21 +20,20 @@ public class Map {
 
     public static Dictionary<string, int> MissingObjectReports = new();
 
-    public readonly string Name;
-    public readonly MapMeta Meta;
-
-    public readonly AreaKey From;
+    public MapId Id;
     public readonly Element FromRaw;
+
+    public readonly MapMeta Meta;
 
     public readonly List<Room> Rooms = [];
     public readonly List<Rectangle> Fillers = [];
 
     public readonly List<Styleground> FGStylegrounds = [];
     public readonly List<Styleground> BGStylegrounds = [];
+    public Color BackgroundColor = Color.Black;
 
-    internal Map(string name) {
-        Name = name;
-        From = AreaData.Get("Snowberry/Playtest").ToKey();
+    internal Map(MapId id) {
+        Id = id;
         Meta = new MapMeta {
             Modes = new MapMetaModeProperties[3]
         };
@@ -47,17 +46,12 @@ public class Map {
         Tileset.Load();
     }
 
-    internal Map(MapData data)
-        : this(data.Filename) {
-        AreaData playtestData = AreaData.Get("Snowberry/Playtest");
-        AreaData targetData = AreaData.Get(data.Area);
-        AreaKey playtestKey = playtestData.ToKey();
-        From = playtestKey; // TODO: this looks incorrect?
+    internal Map(Element mapElement, MapId id) : this(id) {
+        FromRaw = mapElement;
 
-        FromRaw = BinaryPacker.FromBinary(data.Filepath);
         MissingObjectReports = new();
 
-        if (FromRaw.Children?.Find(element => element.Name == "meta") is {} metaElem) {
+        if (mapElement.Find("meta") is {} metaElem) {
             Meta = new MapMeta(metaElem);
             if (Meta.Modes.Length < 3) {
                 var tmp = Meta.Modes; // thank you C#, very cool
@@ -66,28 +60,35 @@ public class Map {
             }
             for (int i = 0; i < Meta.Modes.Length; i++)
                 Meta.Modes[i] ??= new();
-            if (metaElem.Children?.Find(element => element.Name == "mode") is {} modeElem)
+            if (metaElem.Find("mode") is {} modeElem)
                 // handled separately in MapData by everest
                 Meta.Modes[0].Parse(modeElem);
             Meta.Modes[0].SeekerSlowdown ??= true; // see above
         }
 
-        Editor.CopyAreaData(targetData, playtestData);
+        // Editor.CopyAreaData(targetData, playtestData);
         SetupGraphics(Meta);
         Tileset.Load();
 
-        foreach (LevelData roomData in data.Levels)
-            Rooms.Add(new Room(roomData, this));
-        foreach (Rectangle filler in data.Filler)
-            Fillers.Add(filler);
+        foreach (Element roomData in mapElement.FindOrEmpty("levels").Children)
+            Rooms.Add(new Room(new LevelData(roomData), this));
+        foreach (Element filler in mapElement.FindOrEmpty("Filler").Children ?? [])
+            Fillers.Add(new Rectangle(
+                (int)filler.Attributes["x"],
+                (int)filler.Attributes["y"],
+                (int)filler.Attributes["w"],
+                (int)filler.Attributes["h"]
+            ));
+
+        Element styleElement = mapElement.FindOrEmpty("Style");
 
         // load stylegrounds in reverse, to match saving in reverse
         // keeps an internal representation where smaller indexes (closer to 0) = closer to foreground
-        if (data.Foreground?.Children != null) {
-            foreach (var item in data.Foreground.Children.AsEnumerable().Reverse()) {
-                string name = item.Name;
+        if (styleElement.Find("Foregrounds") is {} foregrounds) {
+            foreach (var item in foregrounds.Children.AsEnumerable().Reverse()) {
+                string stylename = item.Name;
 
-                if (name.ToLowerInvariant().Equals("apply")) {
+                if (stylename.ToLowerInvariant().Equals("apply")) {
                     if (item.Children != null) {
                         foreach (var child in item.Children.AsEnumerable().Reverse()) {
                             Styleground styleground = Styleground.Create(child.Name, this, child, item);
@@ -95,17 +96,17 @@ public class Map {
                         }
                     }
                 } else {
-                    Styleground styleground = Styleground.Create(name, this, item);
+                    Styleground styleground = Styleground.Create(stylename, this, item);
                     FGStylegrounds.Add(styleground);
                 }
             }
         }
 
-        if (data.Background?.Children != null) {
-            foreach (var item in data.Background.Children.AsEnumerable().Reverse()) {
-                string name = item.Name;
+        if (styleElement.Find("Backgrounds") is {} backgrounds) {
+            foreach (var item in backgrounds.Children.AsEnumerable().Reverse()) {
+                string stylename = item.Name;
 
-                if (name.ToLowerInvariant().Equals("apply")) {
+                if (stylename.ToLowerInvariant().Equals("apply")) {
                     if (item.Children != null) {
                         foreach (var child in item.Children.AsEnumerable().Reverse()) {
                             Styleground styleground = Styleground.Create(child.Name, this, child, item);
@@ -113,17 +114,31 @@ public class Map {
                         }
                     }
                 } else {
-                    Styleground styleground = Styleground.Create(name, this, item);
+                    Styleground styleground = Styleground.Create(stylename, this, item);
                     BGStylegrounds.Add(styleground);
                 }
             }
         }
 
+        if (styleElement.HasAttr("color"))
+            BackgroundColor = Calc.HexToColor(styleElement.Attr("color"));
+
+        Rooms.ForEach(r => r.AllEntities.ForEach(e => e.InitializeAfter()));
+
         Snowberry.Log(LogLevel.Info, $"Loaded {FGStylegrounds.Count} foreground and {BGStylegrounds.Count} background stylegrounds.");
-        foreach (var (name, quantity) in MissingObjectReports)
+        foreach (var (objName, quantity) in MissingObjectReports)
             if (quantity > 0)
-                Snowberry.Log(LogLevel.Warn, $"Attempted to load unknown object ('{name}') x{quantity}, using placeholder plugin");
+                Snowberry.Log(LogLevel.Warn, $"Attempted to load unknown object ('{objName}') x{quantity}, using placeholder plugin");
         MissingObjectReports = new();
+    }
+
+    public static Map FromData(MapData data) {
+        Element e = BinaryPacker.FromBinary(data.Filepath);
+        MapId id = new LoadedMapId(data.Data.ToKey());
+        // if the path is null, then the map is part of a zip/vanilla and should be locked instead
+        if(id.Path() == null)
+            id = new LockedMapId(data.Data.ToKey(), DateTime.Now);
+        return e == null ? null : new Map(e, id);
     }
 
     internal Room GetRoomAt(Point at) => Rooms.FirstOrDefault(room => new Rectangle(room.X * 8, room.Y * 8, room.Width * 8, room.Height * 8).Contains(at));

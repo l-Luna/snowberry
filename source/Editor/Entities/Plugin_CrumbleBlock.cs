@@ -16,7 +16,9 @@ public class Plugin_CrumbleBlock : Entity {
         base.Render();
 
         // TODO: custom textures
-        MTexture mTexture2 = GFX.Game["objects/crumbleBlock/" + (string.IsNullOrEmpty(Texture) ? AreaData.Get(Editor.Instance.Map.From).CrumbleBlock : Texture)];
+        AreaKey? key = Editor.Instance.Map.Id.Key();
+        string suffix = !string.IsNullOrEmpty(Texture) ? Texture : key is {} k ? AreaData.Get(k).CrumbleBlock : "default";
+        MTexture mTexture2 = GFX.Game["objects/crumbleBlock/" + suffix];
 
         for (int j = 0; (float)j < Width; j += 8) {
             int num2 = (int)((Math.Abs(X) + (float)j) / 8f) % 4;

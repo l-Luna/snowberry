@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
-using Celeste.Mod;
+using Celeste;
+using JetBrains.Annotations;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
@@ -135,6 +135,13 @@ public static class Util {
         var pairs = dict.Where(pair => pair.Value.ToString().Equals(value.ToString()));
         return pairs.Any() ? pairs.FirstOrDefault().Key : fallback;
     }
+
+    [CanBeNull]
+    public static BinaryPacker.Element Find(this BinaryPacker.Element e, string name) =>
+        e.Children.Find(x => x.Name == name);
+
+    public static BinaryPacker.Element FindOrEmpty(this BinaryPacker.Element e, string name) =>
+        e.Find(name) ?? new BinaryPacker.Element { Children = [] };
 
     public static float Mod(float x, float m) => (x % m + m) % m;
     public static float Wrap(float val, float min, float max) => Mod(val - min, max - min) + min;

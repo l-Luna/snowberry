@@ -158,13 +158,10 @@ public class Editor : UIScene {
     internal static bool generatePlaytestMapData = false;
     // for checking whether we're in a real playtest session
     internal static Session PlaytestSession;
+    internal static Map PlaytestMap;
 
     private static Vector2? lastPosition = null;
     private static float? lastZoom = null;
-
-    public static int VanillaLevelID { get; private set; }
-    public static AreaKey? From;
-    public static string UnloadedBinName;
 
     private Editor(Map map) {
         Map = map;
@@ -189,21 +186,24 @@ public class Editor : UIScene {
         }
 
         Map map = null;
-        if (data != null) {
-            if (rte)
-                Snowberry.Log(LogLevel.Info, $"Returning to editor for {From?.SID ?? "unnamed"}");
-            else {
-                Snowberry.Log(LogLevel.Info, $"Opening level editor using map {data.Area.GetSID()}");
-                From = data.Area;
-                TryBackup(Backups.BackupReason.OnOpen);
-            }
+        if (rte) {
+            // check that we're still in the playtest session,
+            // and haven't escaped viw e.g. `overworld`
+            if (Engine.Scene is Level level && level.Session == PlaytestSession) {
+                map = PlaytestMap;
+                Snowberry.Log(LogLevel.Info, $"Returning to editor for \"{map.Id.Name()}\"");
+            } else
+                throw new Exception("Tried to return-to-editor from wrong session");
+        } else if (data != null) {
+            Snowberry.Log(LogLevel.Info, $"Opening level editor using map \"{data.Area.GetSID()}\"");
+            TryBackup(Backups.BackupReason.OnOpen);
 
-            map = new Map(data);
-            map.Rooms.ForEach(r => r.AllEntities.ForEach(e => e.InitializeAfter()));
-        } else
-            From = null;
+            map = Map.FromData(data);
+        }
 
-        UnloadedBinName = null;
+        if (map == null)
+            throw new Exception($"Could not open map \"{data?.Area.GetSID() ?? "null"}\": could not find map data");
+
         Engine.Scene = new Editor(map);
     }
 
@@ -214,11 +214,8 @@ public class Editor : UIScene {
         lastPosition = null; lastZoom = null;
 
         Snowberry.LogInfo("Opening new map in level editor");
-        // Also empties the target's metadata.
-        var map = new Map("snowberry map");
+        var map = new Map(new NewMapId(DateTime.Now));
         map.Rooms.ForEach(r => r.AllEntities.ForEach(e => e.InitializeAfter()));
-        From = null;
-        UnloadedBinName = null;
 
         Engine.Scene = new Editor(map);
     }
@@ -235,10 +232,10 @@ public class Editor : UIScene {
         };
         UI.AddBelow(ActionBar);
 
-        ActionBar.AddRight(new UILabel($"{From?.SID ?? "(new map)"}"), new Vector2(10, 12));
+        ActionBar.AddRight(new UILabel(Map.Id.Name()), new Vector2(10, 12));
 
-        if (From != null) {
-            ActionBar.AddRight(new UILabel(From.Value.Mode switch {
+        if (Map.Id.Key() is {} key) {
+            ActionBar.AddRight(new UILabel(key.Mode switch {
                 AreaMode.Normal => Dialog.Clean("SNOWBERRY_EDITOR_SIDE_A"),
                 AreaMode.BSide => Dialog.Clean("SNOWBERRY_EDITOR_SIDE_B"),
                 AreaMode.CSide => Dialog.Clean("SNOWBERRY_EDITOR_SIDE_C"),
@@ -257,11 +254,11 @@ public class Editor : UIScene {
 
         ActionBar.AddRight(new UIKeyboundButton(ActionbarAtlas.GetSubtexture(16, 0, 16, 16), 3, 3) {
             OnPress = () => {
-                if (UnloadedBinName == null && (From == null || Files.KeyToPath(From.Value) == null)) {
+                if (Map.Id.Path() == null) {
                     // show a popup asking for a filename to save to
                     Message.Clear();
                     // with a useful message
-                    UILabel info = new UILabel(Dialog.Clean(From == null ? "SNOWBERRY_EDITOR_EXPORT_NEW" : "SNOWBERRY_EDITOR_EXPORT_UNSAVEABLE"));
+                    UILabel info = new UILabel(Dialog.Clean(Map.Id is NewMapId ? "SNOWBERRY_EDITOR_EXPORT_NEW" : "SNOWBERRY_EDITOR_EXPORT_UNSAVEABLE"));
                     info.Position = new Vector2(-info.Width / 2f, -28);
                     // validated textbox
                     UIValidatedTextField newName = new UIValidatedTextField(Fonts.Regular, 300) {
@@ -276,18 +273,18 @@ public class Editor : UIScene {
                         if (Files.IsValidFilename(name)) {
                             BinaryExporter.ExportMapToFile(Map, newName.Value + ".bin");
                             Message.Shown = false;
-                            UnloadedBinName = name;
+                            Map.Id = new LooseMapId(Path.Combine(Everest.Loader.PathMods, newName.Value + ".bin"));
+                            // TODO: refresh UI
                         }
                     }, () => Message.Shown = false), new(0, 24));
                     Message.Shown = true;
-                } else if (UnloadedBinName != null) {
-                    BinaryExporter.ExportMapToFile(Map, UnloadedBinName + ".bin");
                 } else {
                     TryBackup(Backups.BackupReason.OnSave);
-                    BinaryExporter.ExportMapToFile(Map);
-                    // TODO: reload for loose map files
-                    // if (From != null)
-                    //     AssetReloadHelper.Do(Dialog.Clean("ASSETRELOADHELPER_RELOADINGMAP"), () => AreaData.Areas[From.Value.ID].Mode[0].MapData.Reload());
+                    BinaryExporter.ExportMapToFile(Map, Map.Id.Path());
+
+                    // if a map is not part of a mod, reload it now too
+                    if (Map.Id.Key() is {} key && Files.IsLooseMap(key))
+                        AssetReloadHelper.Do(Dialog.Clean("ASSETRELOADHELPER_RELOADINGMAP"), () => AreaData.Areas[key.ID].Mode[(int)key.Mode].MapData.Reload());
                 }
             },
             Ctrl = true,
@@ -306,63 +303,62 @@ public class Editor : UIScene {
             Key = Keys.Q
         }, new(6, 4));
 
-        if(From != null && Files.KeyToPath(From.Value) != null){
-            ActionBar.AddRight(new UIKeyboundButton(ActionbarAtlas.GetSubtexture(48, 0, 16, 16), 3, 3) {
-                OnPress = () => {
-                    var backups = Backups.GetBackupsFor(From.Value);
+        ActionBar.AddRight(new UIKeyboundButton(ActionbarAtlas.GetSubtexture(48, 0, 16, 16), 3, 3) {
+            OnPress = () => {
+                var backups = Backups.GetBackupsFor(Map.Id);
 
-                    Message.Clear();
+                Message.Clear();
 
-                    UIScrollPane list = new() {
+                UIScrollPane list = new() {
+                    Width = 300,
+                    Height = 400
+                };
+                bool odd = false;
+                foreach (Backups.Backup b in backups.OrderByDescending(x => x.Timestamp)) {
+                    UIElement bg = new() {
                         Width = 300,
-                        Height = 400
+                        Height = 20,
+                        Background = Color.Orange * (odd ? 0.4f : 0.5f)
                     };
-                    bool odd = false;
-                    foreach (Backups.Backup b in backups.OrderByDescending(x => x.Timestamp)) {
-                        UIElement bg = new() {
-                            Width = 300,
-                            Height = 20,
-                            Background = Color.Orange * (odd ? 0.4f : 0.5f)
-                        };
-                        UILabel label = new UILabel(Dialog.Get("SNOWBERRY_BACKUPS_DESC").Substitute(
-                            Dialog.Clean("SNOWBERRY_BACKUPS_REASON_" + b.Reason.ToString().ToUpperInvariant()),
-                            b.Timestamp
-                        ));
-                        bg.AddBelow(label, new((bg.Height - label.Height) / 2f));
-                        UILabel filesize = new UILabel(Files.FormatFilesize(b.Filesize));
-                        filesize.Position = new Vector2(bg.Width - filesize.Width - (bg.Height - filesize.Height) / 2f, (bg.Height - filesize.Height) / 2f);
-                        bg.Add(filesize);
-                        list.AddBelow(bg);
-                        odd = !odd;
-                    }
+                    UILabel label = new UILabel(Dialog.Get("SNOWBERRY_BACKUPS_DESC").Substitute(
+                        Dialog.Clean("SNOWBERRY_BACKUPS_REASON_" + b.Reason.ToString().ToUpperInvariant()),
+                        b.Timestamp
+                    ));
+                    bg.AddBelow(label, new((bg.Height - label.Height) / 2f));
+                    UILabel filesize = new UILabel(Files.FormatFilesize(b.Filesize));
+                    filesize.Position = new Vector2(bg.Width - filesize.Width - (bg.Height - filesize.Height) / 2f, (bg.Height - filesize.Height) / 2f);
+                    bg.Add(filesize);
+                    list.AddBelow(bg);
+                    odd = !odd;
+                }
 
-                    Message.AddElement(new UILabel(Dialog.Clean("SNOWBERRY_BACKUPS")), new(0, -220), hiddenJustifyY: -0.1f);
-                    Message.AddElement(list, new(0, -8), hiddenJustifyY: -0.1f);
+                Message.AddElement(new UILabel(Dialog.Clean("SNOWBERRY_BACKUPS")), new(0, -220), hiddenJustifyY: -0.1f);
+                Message.AddElement(list, new(0, -8), hiddenJustifyY: -0.1f);
 
-                    Message.AddElement(new UIButton(Dialog.Clean("SNOWBERRY_BACKUPS_OPEN_MAP_FOLDER"), Fonts.Regular, 3, 3) {
-                        OnPress = () => {
-                            string folder = Backups.BackupsDirectoryFor(From.Value);
-                            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
-                            if (!folder.EndsWith("/")) folder += "/";
-                            Process.Start("file://" + folder);
-                        },
-                        BG = Calc.HexToColor("ff8c00"),
-                        HoveredBG = Calc.HexToColor("e37e02"),
-                        PressedBG = Calc.HexToColor("874e07")
-                    }, new(0, 215));
-                    Message.AddElement(new UIButton(Dialog.Clean("SNOWBERRY_BACKUPS_DONE"), Fonts.Regular, 3, 3) {
-                        OnPress = () => Message.Shown = false,
-                        BG = Color.Red,
-                        HoveredBG = Color.Crimson,
-                        PressedBG = Color.DarkRed
-                    }, new(0, 238));
+                Message.AddElement(new UIButton(Dialog.Clean("SNOWBERRY_BACKUPS_OPEN_MAP_FOLDER"), Fonts.Regular, 3, 3) {
+                    OnPress = () => {
+                        // TODO: this is just broken
+                        string folder = Backups.BackupsDirectoryFor(Map.Id);
+                        if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+                        if (!folder.EndsWith("/")) folder += "/";
+                        Process.Start("file://" + folder);
+                    },
+                    BG = Calc.HexToColor("ff8c00"),
+                    HoveredBG = Calc.HexToColor("e37e02"),
+                    PressedBG = Calc.HexToColor("874e07")
+                }, new(0, 215));
+                Message.AddElement(new UIButton(Dialog.Clean("SNOWBERRY_BACKUPS_DONE"), Fonts.Regular, 3, 3) {
+                    OnPress = () => Message.Shown = false,
+                    BG = Color.Red,
+                    HoveredBG = Color.Crimson,
+                    PressedBG = Color.DarkRed
+                }, new(0, 238));
 
-                    Message.Shown = true;
-                },
-                Ctrl = true,
-                Key = Keys.B
-            }, new(6, 4));
-        }
+                Message.Shown = true;
+            },
+            Ctrl = true,
+            Key = Keys.B
+        }, new(6, 4));
 
         ActionBar.AddRight(new UIButton(ActionbarAtlas.GetSubtexture(32, 96, 16, 16), 3, 3) {
             OnPress = () => {
@@ -407,6 +403,8 @@ public class Editor : UIScene {
         SaveData.Instance.AssistMode = false;
 
         TryAutosave(Backups.BackupReason.OnPlaytest);
+
+        PlaytestMap = Map;
 
         generatePlaytestMapData = true;
         try {
@@ -744,52 +742,18 @@ public class Editor : UIScene {
     public bool CanTypeShortcut() => !UI.NestedGrabsKeyboard();
 
     public static void TryBackup(Backups.BackupReason reason) {
-        if(From != null) {
-            string realPath = Files.KeyToPath(From.Value);
-            if (File.Exists(realPath))
-                Backups.SaveBackup(File.ReadAllBytes(realPath), From.Value, reason);
-        }
+        MapId id = Instance?.Map.Id;
+        if (id?.Path() is {} path)
+            if (File.Exists(path))
+                Backups.SaveBackup(File.ReadAllBytes(path), id, reason);
 
         LastAutosave = DateTime.Now;
     }
 
     public static void TryAutosave(Backups.BackupReason reason) {
-        if(From != null && Instance != null)
-            Backups.SaveBackup(BinaryExporter.ExportToBytes(Instance.Map.Export(), From.Value.SID), From.Value, reason);
+        if (Instance?.Map is { } map)
+            Backups.SaveBackup(BinaryExporter.ExportToBytes(map.Export(), map.Id.SID()), map.Id, reason);
 
         LastAutosave = DateTime.Now;
-    }
-
-    internal static void CopyAreaData(AreaData from, AreaData to) {
-        to.ASideAreaDataBackup = from.ASideAreaDataBackup;
-        to.BloomBase = from.BloomBase;
-        to.BloomStrength = from.BloomStrength;
-        to.CanFullClear = from.CanFullClear;
-        to.CassetteSong = from.CassetteSong;
-        to.CobwebColor = from.CobwebColor;
-        to.ColorGrade = from.ColorGrade;
-        to.CompleteScreenName = from.CompleteScreenName;
-        to.CoreMode = from.CoreMode;
-        to.CrumbleBlock = from.CrumbleBlock;
-        to.DarknessAlpha = from.DarknessAlpha;
-        to.Dreaming = from.Dreaming;
-        to.Icon = from.Icon;
-        to.Interlude = from.Interlude;
-        to.IntroType = from.IntroType;
-        to.IsFinal = from.IsFinal;
-        to.Jumpthru = from.Jumpthru;
-        to.Meta = from.Meta;
-        to.Mode = from.Mode;
-        to.Name = from.Name;
-        to.Spike = from.Spike;
-        // mountain meta?
-        to.TitleAccentColor = from.TitleAccentColor;
-        to.TitleBaseColor = from.TitleBaseColor;
-        to.TitleTextColor = from.TitleTextColor;
-        to.Wipe = from.Wipe;
-        to.WoodPlatform = from.WoodPlatform;
-
-        // hold onto info about vanilla's hardcoded stuff
-        VanillaLevelID = from.IsOfficialLevelSet() ? from.ID : -1;
     }
 }

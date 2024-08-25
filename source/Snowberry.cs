@@ -117,7 +117,7 @@ public sealed class Snowberry : EverestModule {
             menu.Items.FindIndex(item =>
                 item.GetType() == typeof(TextMenu.Button) && ((TextMenu.Button)item).Label == Dialog.Clean(label));
 
-        if (level.Session.Area.SID == PlaytestSid) {
+        if (level.Session == Editor.Editor.PlaytestSession) {
             // find the position just under "Return to Map".
             var returnToMapIndex = buttonIdx("MENU_PAUSE_RETURN");
 
@@ -158,7 +158,6 @@ public sealed class Snowberry : EverestModule {
                 menu.Remove(menu.Items[saveAndQuitIndex]);
                 menu.Insert(saveAndQuitIndex, quitBtn);
             }
-
         }
     }
 

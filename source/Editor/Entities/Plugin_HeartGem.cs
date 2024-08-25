@@ -14,11 +14,10 @@ public class Plugin_HeartGem : Entity {
     public override void Render() {
         base.Render();
 
-        string texture = Editor.Instance.Map.From.Mode switch {
-            AreaMode.Normal => "heartgem0",
+        string texture = Editor.Instance.Map.Id.Key()?.Mode switch {
             AreaMode.BSide => "heartgem1",
             AreaMode.CSide => "heartgem2",
-            _ => "heartgem3",
+            _ => "heartgem0"
         };
         FromSprite(Fake ? "heartgem3" : texture, "idle")?.DrawCentered(Position);
     }

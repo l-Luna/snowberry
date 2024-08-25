@@ -96,7 +96,7 @@ public class Plugin_Spinner : Entity {
     }
 
     public static CrystalColor? GetColorForVanillaMap() {
-        return Editor.VanillaLevelID switch {
+        return Editor.Instance.Map.Id.Key()?.ID switch {
             5 => CrystalColor.Red,
             6 => CrystalColor.Purple,
             10 => CrystalColor.Rainbow,
@@ -105,8 +105,8 @@ public class Plugin_Spinner : Entity {
     }
 
     public bool IsVanillaDust() {
-        int id = Editor.VanillaLevelID;
-        return id == 3 || (id == 7 && ((Room ?? Editor.SelectedRoom)?.Name?.StartsWith("d-") ?? false));
+        int? id = Editor.Instance.Map.Id.Key()?.ID;
+        return id == 3 || (id == 7 && (Room?.Name?.StartsWith("d-") ?? false));
     }
 }
 
@@ -152,13 +152,12 @@ public class Plugin_MovingSpinner : Entity {
     }
 
     public bool IsVanillaDust() {
-        int id = Editor.VanillaLevelID;
+        int? id = Editor.Instance.Map.Id.Key()?.ID;
         return id == 3 || (id == 7 && ((Room ?? Editor.SelectedRoom)?.Name?.StartsWith("d-") ?? false));
     }
 
     public bool IsVanillaStar() {
-        int id = Editor.VanillaLevelID;
-        return id == 10;
+        return Editor.Instance.Map.Id.Key()?.ID == 10;
     }
 }
 

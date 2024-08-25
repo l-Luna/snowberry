@@ -59,6 +59,7 @@ SNOWBERRY_SNOWBERRY={# d12626}Snowberry{#}
     
     SNOWBERRY_EDITOR_HISTORY=                   history
 	
+	SNOWBERRY_EDITOR_NEW_MAP=                   (new map)
 	SNOWBERRY_EDITOR_SIDE_A=                    A-Side
 	SNOWBERRY_EDITOR_SIDE_B=                    B-Side
 	SNOWBERRY_EDITOR_SIDE_C=                    C-Side

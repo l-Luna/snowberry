@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Snowberry.Editor.Entities;
+using Snowberry.Editor.Placements;
 
 namespace Snowberry;
 
@@ -72,22 +72,22 @@ public class PluginInfo {
                 else
                     OtherPlugins.Add(pl.Name, info);
 
-                Snowberry.Log(LogLevel.Info, $"Successfully registered '{pl.Name}' plugin");
+                Snowberry.Log(LogLevel.Verbose, $"Successfully registered '{pl.Name}' plugin");
             }
 
             if (isEntity) {
                 MethodInfo addPlacements = t.GetMethod("AddPlacements");
                 if (addPlacements != null) {
-                    if (addPlacements.GetParameters().Length == 0) {
+                    if (addPlacements.GetParameters().Length == 0)
                         addPlacements.Invoke(null, Array.Empty<object>());
-                    } else {
+                    else
                         Snowberry.Log(LogLevel.Warn, $"Found entity plugin with invalid AddPlacements (has parameters)! skipping... (Type: {t})");
-                    }
-                } else {
-                    Snowberry.Log(LogLevel.Info, $"Found entity plugin without placements. (Type: {t})");
-                }
+                } else
+                    Snowberry.Log(LogLevel.Verbose, $"Found entity plugin without placements. (Type: {t})");
             }
         }
+
+        Snowberry.LogInfo($"Successfully registered {Entities.Count + Stylegrounds.Count + OtherPlugins.Count} plugins, and {EntityPlacementProvider.All.Count} placements");
     }
 }
 

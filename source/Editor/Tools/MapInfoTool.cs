@@ -28,7 +28,7 @@ public class MapInfoTool : Tool {
 
         Vector2 optionOffset = new(4, 3);
 
-        UIRibbon ribbon = new UIRibbon(map.Name, leftEdge: true, rightEdge: true) {
+        UIRibbon ribbon = new UIRibbon(map.Id.Name(), leftEdge: true, rightEdge: true) {
             FG = Calc.HexToColor(map.Meta.TitleTextColor ?? ""),
             BG = Calc.HexToColor(map.Meta.TitleBaseColor ?? ""),
             BGAccent = Calc.HexToColor(map.Meta.TitleAccentColor ?? "")
